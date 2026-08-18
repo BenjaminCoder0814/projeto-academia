@@ -1,0 +1,316 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rosa-500: #ff4d8d;
+  --rosa-400: #ff74a8;
+  --rosa-300: #ffa0c4;
+  --rosa-200: #ffc9de;
+  --rosa-100: #ffe4ef;
+  --rosa-50: #fff5f9;
+  --magenta: #e8107a;
+  /* mesmo tom, um tico mais fechado: é o rosa que passa em AA no texto pequeno */
+  --magenta-texto: #c90f68;
+  --lavanda: #c7a9ff;
+  --dourado: #ffc978;
+  --vermelhinho: #ff7a85;
+  --verde: #4ade80;
+  --carvao: #2b1e28;
+  --cinza: #76626f;
+  --gradiente: linear-gradient(135deg, #ff4d8d 0%, #c7a9ff 100%);
+  --gradiente-topo: linear-gradient(135deg, #ffd7e7 0%, #ffe9f2 55%, #f0e4ff 100%);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-rosa-50 text-carvao font-corpo antialiased;
+    margin: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  #root {
+    position: relative;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px;
+    font-family: inherit;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  ::selection {
+    background: var(--rosa-200);
+  }
+
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--rosa-100);
+    outline: none;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--rosa-500);
+    border: 4px solid #fff;
+    box-shadow: 0 4px 12px rgba(255, 77, 141, 0.4);
+    cursor: pointer;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--rosa-500);
+    border: 4px solid #fff;
+    box-shadow: 0 4px 12px rgba(255, 77, 141, 0.4);
+    cursor: pointer;
+  }
+
+  input[type='range']::-moz-range-track {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--rosa-100);
+  }
+}
+
+@layer components {
+  .cartao {
+    @apply rounded-card bg-white/85 shadow-rosa;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .cartao-solido {
+    @apply rounded-card bg-white shadow-rosa;
+    border: 1px solid rgba(255, 201, 222, 0.5);
+  }
+
+  .botao-principal {
+    @apply rounded-pill px-6 py-4 font-display font-bold text-white shadow-rosaForte;
+    background: var(--gradiente);
+    min-height: 48px;
+  }
+
+  .botao-suave {
+    @apply rounded-pill bg-rosa-100 px-5 py-3 font-display font-semibold text-rosa-500;
+    min-height: 48px;
+  }
+
+  .rotulo {
+    @apply text-xs font-semibold uppercase tracking-wide text-cinza;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .toque {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  .esqueleto {
+    background: linear-gradient(90deg, #ffe4ef 25%, #fff5f9 37%, #ffe4ef 63%);
+    background-size: 400% 100%;
+    animation: brilho 1.4s ease infinite;
+  }
+
+  .area-segura-baixo {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px));
+  }
+
+  .area-segura-alto {
+    padding-top: calc(env(safe-area-inset-top, 0px));
+  }
+
+  /* moldura de fotinha */
+  .polaroid {
+    background: #fff;
+    padding: 8px 8px 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 26px rgba(255, 77, 141, 0.25);
+  }
+}
+
+@keyframes brilho {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* blobs rosa e lavanda flutuando devagar no fundo */
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 0;
+}
+
+.blob-1 {
+  width: 320px;
+  height: 320px;
+  background: #ffc9de;
+  top: -80px;
+  left: -100px;
+  animation: flutuar1 22s ease-in-out infinite;
+}
+
+.blob-2 {
+  width: 280px;
+  height: 280px;
+  background: #dcc8ff;
+  top: 42%;
+  right: -120px;
+  animation: flutuar2 26s ease-in-out infinite;
+}
+
+.blob-3 {
+  width: 300px;
+  height: 300px;
+  background: #ffe4ef;
+  bottom: -110px;
+  left: -60px;
+  animation: flutuar3 20s ease-in-out infinite;
+}
+
+@keyframes flutuar1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, 60px, 0) scale(1.12);
+  }
+}
+
+@keyframes flutuar2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-50px, -40px, 0) scale(0.95);
+  }
+}
+
+@keyframes flutuar3 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(60px, -30px, 0) scale(1.1);
+  }
+}
+
+/* coraçõezinhos subindo no fundo */
+.coracao-fundo {
+  position: absolute;
+  bottom: -30px;
+  color: var(--rosa-300);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: subir linear infinite;
+}
+
+@keyframes subir {
+  0% {
+    transform: translateY(0) scale(0.7) rotate(-8deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(-320px) scale(1.05) rotate(10deg);
+    opacity: 0;
+  }
+}
+
+/* anel pulsando no dia de hoje */
+@keyframes pulso-anel {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 141, 0.55);
+  }
+  60% {
+    box-shadow: 0 0 0 9px rgba(255, 77, 141, 0);
+  }
+}
+
+.anel-hoje {
+  animation: pulso-anel 1.8s ease-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .blob,
+  .coracao-fundo,
+  .anel-hoje {
+    animation: none !important;
+  }
+
+  .coracao-fundo {
+    display: none;
+  }
+}

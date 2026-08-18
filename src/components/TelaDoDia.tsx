@@ -1,0 +1,497 @@
+import { AnimatePresence, motion } from 'framer-motion'
+import { Flame } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CARTINHAS, COMEMORACOES, FRASES_DO_DIA, sementeDaData, sortear } from '../conteudo/mensagens'
+import { useEstado } from '../data/estado'
+import {
+  CORRIDA_HORARIO,
+  NATACAO_HORARIO,
+  planoDoDia,
+  umaCasa,
+} from '../lib/calculos'
+import { chuvaDeCoracoes, soltarConfete } from '../lib/confete'
+import { dataPorExtenso, diffDias, somarDias } from '../lib/datas'
+import { ehDiaPerfeito, fotoDe, pesoEm, tarefasDoDia } from '../lib/derivados'
+import { diasDoDesafio } from '../lib/fase'
+import { vibrar } from '../lib/feedback'
+import { CartaoAgua } from './Agua'
+import { CartinhaAberta, ChamadaDaCartinha, EnvelopeRecado } from './Envelope'
+import { CartaoFoto } from './Fotos'
+import { Botao, Campo, CheckCoracao, Etiqueta } from './ui'
+
+const CARINHAS = ['😫', '😕', '🙂', '😄', '🥰']
+
+export function TelaDoDia({
+  data,
+  aoFechar,
+  aoIrParaTreino,
+}: {
+  data: string
+  aoFechar: () => void
+  aoIrParaTreino: () => void
+}) {
+  const { snap, hoje, diaDe, metaAguaDe, salvarDia, salvarPeso, souIsabela, marcarRecadoLido } =
+    useEstado()
+  const plano = planoDoDia(data)
+  const dia = diaDe(data)
+  const tarefas = tarefasDoDia(data, dia, snap.fotos)
+  const meta = metaAguaDe(data)
+  const perfeito = ehDiaPerfeito(data, tarefas)
+  const somenteLeitura = !souIsabela
+  const ehHoje = data === hoje
+  const ehFuturo = diffDias(hoje, data) > 0
+
+  const indiceDoDia = useMemo(
+    () => diasDoDesafio().find((d) => d.data === data)?.indice ?? 0,
+    [data],
+  )
+  const cartinha = CARTINHAS.find((c) => c.indiceDoDia === indiceDoDia)
+  const cartinhaLiberada = cartinha && !ehFuturo
+  const [cartinhaAberta, setCartinhaAberta] = useState(false)
+
+  const frase = useMemo(
+    () => sortear(FRASES_DO_DIA[plano.tipo], sementeDaData(data)),
+    [plano.tipo, data],
+  )
+
+  const recados = snap.recados.filter((r) => r.data === data)
+
+  // festa quando o dia fecha completo
+  const jaFestejou = useRef(perfeito)
+  const [festa, setFesta] = useState(false)
+  useEffect(() => {
+    if (perfeito && !jaFestejou.current) {
+      jaFestejou.current = true
+      setFesta(true)
+      soltarConfete(130)
+      chuvaDeCoracoes(40)
+      vibrar([90, 60, 90, 60, 160])
+      const t = setTimeout(() => setFesta(false), 2800)
+      return () => clearTimeout(t)
+    }
+    if (!perfeito) jaFestejou.current = false
+  }, [perfeito])
+
+  const selo =
+    plano.tipo === 'folguinha'
+      ? { texto: '💤 Folguinha', cor: '#FF7A85' }
+      : plano.tipo === 'bonus'
+        ? { texto: '⭐ Bônus — sem pressão', cor: '#C7A9FF' }
+        : { texto: `💗 ${plano.legenda}`, cor: '#FF4D8D' }
+
+  return (
+    <div className="pb-6 pt-2">
+      {/* cabeçalho do dia */}
+      <div className="mb-1 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-extrabold first-letter:uppercase">
+            {dataPorExtenso(data)}
+          </h2>
+          <p className="text-xs text-cinza">
+            Dia {indiceDoDia} de 15{ehHoje ? ' · hoje 📍' : ''}
+          </p>
+        </div>
+        <Etiqueta texto={selo.texto} cor={selo.cor} className="mt-1 shrink-0" />
+      </div>
+
+      <p className="font-bilhete mb-4 text-xl text-rosa-500">{frase}</p>
+
+      <div className="space-y-3">
+        {/* cartinha surpresa */}
+        {cartinhaLiberada && (
+          <ChamadaDaCartinha cartinha={cartinha!} aoAbrir={() => setCartinhaAberta(true)} />
+        )}
+
+        {/* recadinhos */}
+        {recados.map((r) => (
+          <EnvelopeRecado
+            key={r.id}
+            texto={r.texto}
+            autor={r.autor_nome ?? 'Benjamin'}
+            jaLido={r.lido && !souIsabela}
+            aoAbrir={() => souIsabela && !r.lido && void marcarRecadoLido(r.id)}
+          />
+        ))}
+
+        {/* corrida */}
+        {plano.corrida && (
+          <div className="cartao-solido p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🏃‍♀️</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-[15px] font-bold">Corrida intervalada</h3>
+                <p className="num text-xs font-semibold text-magenta-texto">
+                  {CORRIDA_HORARIO} · 40 minutos
+                </p>
+                <p className="mt-0.5 text-xs text-cinza">
+                  20 ciclos: 1 min caminhando + 1 min correndo
+                </p>
+              </div>
+            </div>
+            <CheckCoracao
+              marcado={tarefas.corrida.feito}
+              titulo="Fiz a corrida de hoje"
+              somenteLeitura={somenteLeitura}
+              aoMudar={(v) => void salvarDia(data, { corrida_ok: v })}
+            />
+            {souIsabela && ehHoje && !tarefas.corrida.feito && (
+              <Botao
+                className="mt-1 flex w-full items-center justify-center gap-2"
+                onClick={() => {
+                  aoFechar()
+                  aoIrParaTreino()
+                }}
+              >
+                <Flame size={18} /> Bora correr! 💗
+              </Botao>
+            )}
+          </div>
+        )}
+
+        {/* bônus de sexta */}
+        {plano.corridaBonus && (
+          <div
+            className="rounded-card p-4 shadow-rosa"
+            style={{ background: 'linear-gradient(135deg,#FFF6E6 0%,#F4ECFF 100%)' }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⭐</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-[15px] font-bold">Corridinha bônus</h3>
+                <p className="mt-0.5 text-xs leading-snug text-carvao/70">
+                  Hoje é opcional de verdade. Se você for, ganha estrelinha. Se não for, tá tudo
+                  certo — nada muda por aqui 💗
+                </p>
+              </div>
+            </div>
+            <CheckCoracao
+              tom="dourado"
+              marcado={tarefas.bonus.feito}
+              titulo="Fui correr! ⭐"
+              descricao={CORRIDA_HORARIO}
+              somenteLeitura={somenteLeitura}
+              aoMudar={(v) => {
+                void salvarDia(data, { bonus_sexta_ok: v })
+                if (v) {
+                  soltarConfete(110)
+                  vibrar([80, 50, 120])
+                }
+              }}
+            />
+            {tarefas.bonus.feito && (
+              <motion.p
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-bilhete text-center text-xl text-dourado"
+                style={{ color: '#C98A2B' }}
+              >
+                {COMEMORACOES.bonusFeito}
+              </motion.p>
+            )}
+            {souIsabela && ehHoje && !tarefas.bonus.feito && (
+              <Botao
+                tipo="suave"
+                className="mt-1 flex w-full items-center justify-center gap-2"
+                onClick={() => {
+                  aoFechar()
+                  aoIrParaTreino()
+                }}
+              >
+                <Flame size={17} /> Se eu quiser, abrir o cronômetro
+              </Botao>
+            )}
+          </div>
+        )}
+
+        {/* natação */}
+        {plano.natacao && (
+          <div className="cartao-solido p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🏊‍♀️</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-[15px] font-bold">Natação</h3>
+                <p className="num text-xs font-semibold text-magenta-texto">
+                  {NATACAO_HORARIO} · 45 minutos
+                </p>
+              </div>
+            </div>
+            <CheckCoracao
+              marcado={tarefas.natacao.feito}
+              titulo="Nadei hoje 🏊‍♀️"
+              somenteLeitura={somenteLeitura}
+              aoMudar={(v) => void salvarDia(data, { natacao_ok: v })}
+            />
+          </div>
+        )}
+
+        {/* folguinha */}
+        {plano.tipo === 'folguinha' && (
+          <div
+            className="rounded-card p-4 text-center shadow-rosa"
+            style={{ background: 'linear-gradient(135deg,#FFE3E6 0%,#FFF0F3 100%)' }}
+          >
+            <p className="text-3xl">💤</p>
+            <p className="mt-1 font-display text-[15px] font-bold">Descanso merecido ❤️</p>
+            <p className="mt-1 text-xs leading-snug text-carvao/70">
+              Nada obrigatório hoje. Se quiser tirar a fotinha e registrar a água, pode — mas sem
+              cobrança nenhuma.
+            </p>
+          </div>
+        )}
+
+        {/* água */}
+        <CartaoAgua
+          aguaMl={dia?.agua_ml ?? 0}
+          metaMl={meta}
+          somenteLeitura={somenteLeitura}
+          aoRegistrar={(total) => void salvarDia(data, { agua_ml: total })}
+        />
+
+        {/* fotos */}
+        <CartaoFoto
+          titulo="📸 Foto do dia"
+          descricao="Mesma pose, mesmo lugarzinho. É isso que faz o antes e depois ficar lindo."
+          tipo="evolucao"
+          data={data}
+          foto={fotoDe(snap, data, 'evolucao')}
+          fotoAnterior={fotoDe(snap, somarDias(data, -1), 'evolucao')}
+          somenteLeitura={somenteLeitura}
+        />
+
+        {(plano.corrida || plano.corridaBonus) && (
+          <>
+            <CartaoFoto
+              titulo="⌚ Foto do relógio"
+              descricao="A telinha do relógio com o tempo, as calorias e os batimentos."
+              tipo="relogio"
+              data={data}
+              foto={fotoDe(snap, data, 'relogio')}
+              somenteLeitura={somenteLeitura}
+            />
+            {!somenteLeitura && (
+              <div className="cartao-solido grid grid-cols-2 gap-3 p-4">
+                <CampoNumero
+                  rotulo="Calorias"
+                  sufixo="kcal"
+                  valor={dia?.calorias ?? null}
+                  aoSalvar={(v) => void salvarDia(data, { calorias: v })}
+                />
+                <CampoNumero
+                  rotulo="Batimentos"
+                  sufixo="bpm"
+                  valor={dia?.fc_media ?? null}
+                  aoSalvar={(v) => void salvarDia(data, { fc_media: v })}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* humor + anotação */}
+        <div className="cartao-solido p-4">
+          <h3 className="mb-2.5 font-display text-[15px] font-bold">Como me senti hoje</h3>
+          <div className="flex justify-between gap-1.5">
+            {CARINHAS.map((emoji, i) => {
+              const nivel = i + 1
+              const ativo = dia?.humor === nivel
+              return (
+                <motion.button
+                  key={emoji}
+                  type="button"
+                  whileTap={{ scale: 0.88 }}
+                  disabled={somenteLeitura}
+                  onClick={() => {
+                    vibrar(25)
+                    void salvarDia(data, { humor: nivel })
+                  }}
+                  className={`grid h-14 flex-1 place-items-center rounded-2xl text-2xl transition-colors ${
+                    ativo ? 'bg-rosa-100 ring-2 ring-rosa-400' : 'bg-rosa-50'
+                  }`}
+                  aria-label={`Carinha ${nivel} de 5`}
+                >
+                  {emoji}
+                </motion.button>
+              )
+            })}
+          </div>
+
+          <div className="mt-4">
+            <Anotacao
+              valor={dia?.nota ?? ''}
+              somenteLeitura={somenteLeitura}
+              aoSalvar={(texto) => void salvarDia(data, { nota: texto })}
+            />
+          </div>
+        </div>
+
+        {/* peso */}
+        {!somenteLeitura && <CartaoPeso data={data} aoSalvar={salvarPeso} />}
+      </div>
+
+      {/* dia perfeito */}
+      <AnimatePresence>
+        {festa && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none fixed inset-0 z-[80] grid place-items-center bg-rosa-500/20 backdrop-blur-[2px]"
+          >
+            <motion.p
+              initial={{ scale: 0.4, rotate: -8 }}
+              animate={{ scale: 1, rotate: -2 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+              className="font-manuscrita rounded-[26px] bg-white/95 px-8 py-6 text-center text-3xl text-rosa-500 shadow-rosaForte"
+            >
+              {COMEMORACOES.diaPerfeito}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cartinhaAberta && cartinha && (
+          <CartinhaAberta cartinha={cartinha} aoFechar={() => setCartinhaAberta(false)} />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function CampoNumero({
+  rotulo,
+  valor,
+  sufixo,
+  aoSalvar,
+}: {
+  rotulo: string
+  valor: number | null
+  sufixo: string
+  aoSalvar: (v: number | null) => void
+}) {
+  const [texto, setTexto] = useState(valor?.toString() ?? '')
+  useEffect(() => setTexto(valor?.toString() ?? ''), [valor])
+  return (
+    <label className="block">
+      <span className="rotulo mb-1.5 block">{rotulo}</span>
+      <span className="flex items-center gap-1 rounded-2xl border border-rosa-200 bg-white px-3 py-3">
+        <input
+          className="num w-full min-w-0 bg-transparent text-[17px] font-semibold outline-none"
+          inputMode="numeric"
+          value={texto}
+          placeholder="—"
+          onChange={(e) => setTexto(e.target.value.replace(/\D/g, ''))}
+          onBlur={() => aoSalvar(texto === '' ? null : Number(texto))}
+        />
+        <span className="shrink-0 text-xs font-semibold text-cinza">{sufixo}</span>
+      </span>
+    </label>
+  )
+}
+
+function Anotacao({
+  valor,
+  aoSalvar,
+  somenteLeitura,
+}: {
+  valor: string
+  aoSalvar: (v: string) => void
+  somenteLeitura?: boolean
+}) {
+  const [texto, setTexto] = useState(valor)
+  useEffect(() => setTexto(valor), [valor])
+
+  if (somenteLeitura) {
+    return (
+      <>
+        <span className="rotulo mb-1.5 block">Anotação do dia</span>
+        <p className="font-bilhete rounded-2xl bg-rosa-50 p-3 text-xl text-carvao/80">
+          {valor || 'sem anotação nesse dia'}
+        </p>
+      </>
+    )
+  }
+
+  return (
+    <label className="block">
+      <span className="rotulo mb-1.5 block">Anotação do dia</span>
+      <textarea
+        value={texto}
+        rows={2}
+        maxLength={280}
+        placeholder="escreve aqui como foi seu dia, amor"
+        onChange={(e) => setTexto(e.target.value)}
+        onBlur={() => aoSalvar(texto)}
+        className="w-full resize-none rounded-2xl border border-rosa-200 bg-white p-3 text-[15px] outline-none focus:border-rosa-400"
+      />
+    </label>
+  )
+}
+
+function CartaoPeso({
+  data,
+  aoSalvar,
+}: {
+  data: string
+  aoSalvar: (data: string, kg: number) => Promise<void>
+}) {
+  const { snap } = useEstado()
+  const registrado = snap.pesos.find((p) => p.data === data)
+  const atual = pesoEm(snap, data)
+  const [texto, setTexto] = useState('')
+  const [aberto, setAberto] = useState(false)
+
+  return (
+    <div className="cartao-solido p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-[15px] font-bold">⚖️ Peso de hoje</h3>
+          <p className="text-xs text-cinza">
+            {registrado
+              ? `você registrou ${umaCasa(registrado.peso_kg)} kg`
+              : 'se quiser registrar — sem obrigação'}
+          </p>
+        </div>
+        <Botao tipo="suave" className="px-4 py-2.5 text-sm" onClick={() => setAberto((v) => !v)}>
+          {registrado ? 'Mudar' : 'Registrar'}
+        </Botao>
+      </div>
+
+      <AnimatePresence>
+        {aberto && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3">
+              <Campo
+                rotulo="Peso"
+                valor={texto}
+                aoMudar={setTexto}
+                tipo="decimal"
+                sufixo="kg"
+                placeholder={atual ? umaCasa(atual) : '00,0'}
+              />
+              <Botao
+                className="mt-3 w-full"
+                desabilitado={!texto}
+                onClick={async () => {
+                  const kg = Number(texto.replace(',', '.'))
+                  if (!Number.isFinite(kg) || kg <= 0) return
+                  await aoSalvar(data, kg)
+                  setTexto('')
+                  setAberto(false)
+                  vibrar(40)
+                }}
+              >
+                Salvar 💗
+              </Botao>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
