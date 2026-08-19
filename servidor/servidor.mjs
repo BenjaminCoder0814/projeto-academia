@@ -11,7 +11,7 @@
  */
 import { DatabaseSync } from 'node:sqlite'
 import { createServer } from 'node:http'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -77,11 +77,13 @@ db.exec(`
     id text primary key,
     user_id text not null,
     data text not null,
-    tipo text not null check (tipo in ('evolucao','relogio')),
+    tipo text not null check (tipo in ('evolucao','relogio','galeria')),
     arquivo text not null,
-    criado_em text default (datetime('now')),
-    unique (user_id, data, tipo)
+    criado_em text default (datetime('now'))
   );
+
+  create unique index if not exists fotos_uma_por_tipo
+    on fotos (user_id, data, tipo) where tipo in ('evolucao','relogio');
 
   create table if not exists recados (
     id text primary key,
@@ -301,16 +303,20 @@ const servidor = createServer(async (req, res) => {
       const bytes = await corpoBruto(req)
       if (!bytes.length) return responder(res, 400, { erro: 'foto vazia' })
 
-      const anterior = db
-        .prepare('select id from fotos where user_id = ? and data = ? and tipo = ?')
-        .get(isabela.id, data, tipo)
+      // a galeria aceita quantas ela quiser; as outras duas são uma por dia
+      const anterior =
+        tipo === 'galeria'
+          ? null
+          : db
+              .prepare('select id from fotos where user_id = ? and data = ? and tipo = ?')
+              .get(isabela.id, data, tipo)
       const id = anterior?.id ?? randomUUID()
       const arquivo = `${id}.jpg`
       writeFileSync(join(PASTA_FOTOS, arquivo), bytes)
       db.prepare(
         `insert into fotos (id, user_id, data, tipo, arquivo, criado_em)
          values (?, ?, ?, ?, ?, datetime('now'))
-         on conflict (user_id, data, tipo) do update set
+         on conflict (id) do update set
            arquivo = excluded.arquivo, criado_em = excluded.criado_em`,
       ).run(id, isabela.id, data, tipo, arquivo)
       return responder(res, 200, {
@@ -333,6 +339,16 @@ const servidor = createServer(async (req, res) => {
         'cache-control': 'private, max-age=60',
       })
       return res.end(readFileSync(caminho))
+    }
+
+    if (recurso === 'fotos' && req.method === 'DELETE') {
+      const linha = db.prepare('select arquivo from fotos where id = ?').get(a)
+      if (linha) {
+        db.prepare('delete from fotos where id = ?').run(a)
+        const caminho = join(PASTA_FOTOS, linha.arquivo)
+        if (existsSync(caminho)) rmSync(caminho, { force: true })
+      }
+      return responder(res, 200, { ok: true })
     }
 
     /* --- recadinhos --- */

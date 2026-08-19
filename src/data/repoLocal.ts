@@ -73,7 +73,8 @@ async function migrarDoLocalStorage() {
 /* Fotos: metadado no estado, arquivo na loja de fotos                 */
 /* ------------------------------------------------------------------ */
 
-const chaveMeta = (data: string, tipo: TipoFoto) => `foto:${data}:${tipo}`
+const chaveMeta = (data: string, tipo: TipoFoto, id?: string) =>
+  tipo === 'galeria' ? `foto:${data}:galeria:${id}` : `foto:${data}:${tipo}`
 
 async function listarFotos(): Promise<Foto[]> {
   const db = await import('./bancoLocal').then((m) => m.abrirBanco())
@@ -192,7 +193,8 @@ export const repoLocal: Repo = {
   },
 
   async enviarFoto(data, tipo: TipoFoto, arquivo) {
-    const caminho = `local/${data}-${tipo}`
+    const marca = tipo === 'galeria' ? `-${Date.now().toString(36)}` : ''
+    const caminho = `local/${data}-${tipo}${marca}`
     await guardar(LOJAS.fotos, arquivo, caminho)
     const foto: Foto = {
       id: caminho,
@@ -201,7 +203,7 @@ export const repoLocal: Repo = {
       storage_path: caminho,
       criado_em: new Date().toISOString(),
     }
-    await guardar(LOJAS.estado, foto, chaveMeta(data, tipo))
+    await guardar(LOJAS.estado, foto, chaveMeta(data, tipo, caminho))
     const antiga = urlsEmCache.get(caminho)
     if (antiga) {
       URL.revokeObjectURL(antiga)
@@ -209,6 +211,17 @@ export const repoLocal: Repo = {
     }
     avisar()
     return foto
+  },
+
+  async apagarFoto(foto) {
+    await apagar(LOJAS.fotos, foto.storage_path)
+    await apagar(LOJAS.estado, chaveMeta(foto.data, foto.tipo, foto.storage_path))
+    const url = urlsEmCache.get(foto.storage_path)
+    if (url) {
+      URL.revokeObjectURL(url)
+      urlsEmCache.delete(foto.storage_path)
+    }
+    avisar()
   },
 
   async urlDaFoto(caminho) {

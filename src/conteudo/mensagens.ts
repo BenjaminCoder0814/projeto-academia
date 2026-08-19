@@ -34,58 +34,7 @@ export const FRASES_DO_DIA = {
   ],
 } as const
 
-/** Cartinhas surpresa — abrem no dia 1, no dia 8 e no dia 15 do desafio. */
-export type Cartinha = { indiceDoDia: number; titulo: string; texto: string }
-
-export const CARTINHAS: Cartinha[] = [
-  {
-    indiceDoDia: 1,
-    titulo: 'pro seu primeiro dia 💗',
-    texto: `Isabela,
-
-hoje é o dia 1 de uma coisa que você decidiu sozinha, e isso já me deixa orgulhoso antes mesmo de você começar.
-
-Eu fiz esse cantinho aqui pra você não fazer isso sozinha. Todo dia que você marcar um quadradinho, eu vou estar vendo do meu celular e torcendo por você.
-
-Não é sobre o número da balança. É sobre você provar pra você mesma que você faz o que decide fazer.
-
-Vai com calma. Eu tô aqui.
-
-te amo 💗`,
-  },
-  {
-    indiceDoDia: 8,
-    titulo: 'metade do caminho 🌸',
-    texto: `Amor,
-
-metade. Você já fez metade.
-
-Sabe aquela semana que parecia que não ia passar? Passou — e você passou por ela treinando.
-
-Se hoje tiver sido um dia difícil, tudo bem. Difícil não é motivo pra parar, é só um dia mais pesado que os outros.
-
-Olha pra trás no calendário e vê tudo que você já pintou de rosa. Isso é seu.
-
-Falta pouco. Segura firme 💗`,
-  },
-  {
-    indiceDoDia: 15,
-    titulo: 'você conseguiu 🏆',
-    texto: `Isabela,
-
-acabou. Você foi do começo ao fim.
-
-Quinze dias atrás isso aqui era só uma ideia num papel, e agora é um calendário inteiro com a sua marca em cada dia.
-
-Compara a foto do primeiro dia com a de hoje. Não é só o corpo — é o jeito que você olha pra câmera.
-
-Eu sempre soube que você ia conseguir. Só queria estar do seu lado quando acontecesse.
-
-Parabéns, meu amor. De verdade.
-
-seu, Benjamin 💗`,
-  },
-]
+/* As cartinhas de cada dia moram em conteudo/cartas.ts */
 
 /** Mensagem final da tela de 01/09. */
 export const CARTA_FINAL = {

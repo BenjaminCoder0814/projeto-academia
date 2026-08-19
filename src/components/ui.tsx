@@ -429,14 +429,14 @@ export function Folhinha({
                 onPointerMove={seguirArrasto}
                 onPointerUp={terminarArrasto}
                 onPointerCancel={terminarArrasto}
-                className="relative shrink-0 cursor-grab touch-none pb-1 pt-3 active:cursor-grabbing"
+                className="relative z-10 min-h-[48px] shrink-0 cursor-grab touch-none pb-1 pt-3 active:cursor-grabbing"
               >
                 <div className="mx-auto h-1.5 w-12 rounded-pill bg-rosa-200" />
                 <button
                   type="button"
                   onClick={aoFechar}
                   aria-label="Fechar"
-                  className="absolute right-2 top-1 grid h-11 w-11 place-items-center rounded-full text-cinza"
+                  className="absolute right-2 top-0 grid h-11 w-11 place-items-center rounded-full bg-rosa-50/80 text-cinza"
                 >
                   <X size={20} />
                 </button>

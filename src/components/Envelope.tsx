@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { chuvaDeCoracoes } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
-import type { Cartinha } from '../conteudo/mensagens'
+
 import { Botao } from './ui'
 
 /* ------------------------------------------------------------------ */
@@ -102,13 +102,51 @@ export function EnvelopeRecado({
 /* Cartinha surpresa                                                   */
 /* ------------------------------------------------------------------ */
 
-export function ChamadaDaCartinha({ cartinha, aoAbrir }: { cartinha: Cartinha; aoAbrir: () => void }) {
+export type Papelzinho = { titulo: string; texto: string }
+
+/** A chamada da cartinha do dia — trancada até a hora dela. */
+export function ChamadaDaCartinha({
+  cartinha,
+  aoAbrir,
+  trancada,
+  aviso,
+}: {
+  cartinha: Papelzinho
+  aoAbrir: () => void
+  trancada?: boolean
+  aviso?: string | null
+}) {
+  if (trancada) {
+    return (
+      <div
+        className="flex w-full items-center gap-3 rounded-card p-4 text-left opacity-80 shadow-rosa"
+        style={{ background: 'linear-gradient(135deg,#F3EEF7 0%,#FFF0F6 100%)' }}
+      >
+        <motion.span
+          animate={{ rotate: [-4, 4, -4] }}
+          transition={{ duration: 3, repeat: Infinity }}
+          className="text-3xl grayscale"
+        >
+          💌
+        </motion.span>
+        <span className="min-w-0">
+          <span className="rotulo block">Cartinha de hoje 🔒</span>
+          <span className="font-bilhete block text-lg leading-tight text-carvao/70">
+            {aviso ?? 'ainda não é a hora 💗'}
+          </span>
+        </span>
+      </div>
+    )
+  }
+
   return (
     <motion.button
       type="button"
       onClick={aoAbrir}
       whileTap={{ scale: 0.97 }}
-      className="flex w-full items-center gap-3 rounded-card p-4 text-left shadow-rosaForte"
+      animate={{ boxShadow: ['0 8px 32px rgba(255,77,141,.18)', '0 12px 40px rgba(255,77,141,.34)', '0 8px 32px rgba(255,77,141,.18)'] }}
+      transition={{ duration: 2.4, repeat: Infinity }}
+      className="flex w-full items-center gap-3 rounded-card p-4 text-left"
       style={{ background: 'linear-gradient(135deg,#FFD9E8 0%,#F0E4FF 100%)' }}
     >
       <motion.span
@@ -118,15 +156,16 @@ export function ChamadaDaCartinha({ cartinha, aoAbrir }: { cartinha: Cartinha; a
       >
         💌
       </motion.span>
-      <span>
-        <span className="rotulo block">Cartinha surpresa</span>
+      <span className="min-w-0">
+        <span className="rotulo block">Cartinha de hoje</span>
         <span className="font-bilhete block text-xl text-magenta-texto">{cartinha.titulo}</span>
+        <span className="block text-[11px] text-cinza">toca pra abrir 💗</span>
       </span>
     </motion.button>
   )
 }
 
-export function CartinhaAberta({ cartinha, aoFechar }: { cartinha: Cartinha; aoFechar: () => void }) {
+export function CartinhaAberta({ cartinha, aoFechar }: { cartinha: Papelzinho; aoFechar: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}

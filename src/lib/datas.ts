@@ -113,6 +113,15 @@ export function numeroDoDia(iso: string): number {
   return Number(iso.slice(8, 10))
 }
 
+/** Hora cheia em Brasília (0 a 23). */
+export function horaEmBrasilia(agora: Date = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat('pt-BR', { timeZone: FUSO, hour: '2-digit', hour12: false }).format(
+      agora,
+    ),
+  )
+}
+
 /** Saudacao pelo horario de Brasilia. */
 export function saudacao(agora: Date = new Date()): string {
   const hora = Number(

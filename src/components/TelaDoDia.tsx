@@ -1,7 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CARTINHAS, COMEMORACOES, FRASES_DO_DIA, sementeDaData, sortear } from '../conteudo/mensagens'
+import { COMEMORACOES, FRASES_DO_DIA, sementeDaData, sortear } from '../conteudo/mensagens'
+import { ELOGIOS_DO_DIA_COMPLETO, FECHOU_O_DIA } from '../conteudo/cartas'
+import { estadoDaCarta } from '../lib/cartas'
+import { AdicionarFotos, GradeDeFotos } from './GaleriaDeFotos'
 import { useEstado } from '../data/estado'
 import {
   CORRIDA_HORARIO,
@@ -30,7 +33,7 @@ export function TelaDoDia({
   aoFechar: () => void
   aoIrParaTreino: () => void
 }) {
-  const { snap, hoje, diaDe, metaAguaDe, salvarDia, salvarPeso, souIsabela, marcarRecadoLido } =
+  const { snap, hoje, agora, diaDe, metaAguaDe, salvarDia, salvarPeso, souIsabela, marcarRecadoLido } =
     useEstado()
   const plano = planoDoDia(data)
   const dia = diaDe(data)
@@ -45,9 +48,13 @@ export function TelaDoDia({
     () => diasDoDesafio().find((d) => d.data === data)?.indice ?? 0,
     [data],
   )
-  const cartinha = CARTINHAS.find((c) => c.indiceDoDia === indiceDoDia)
-  const cartinhaLiberada = cartinha && !ehFuturo
+  const { carta, liberada: cartaLiberada, aviso: avisoDaCarta } = estadoDaCarta(data, hoje, agora)
   const [cartinhaAberta, setCartinhaAberta] = useState(false)
+  const [fechouODia, setFechouODia] = useState<(typeof FECHOU_O_DIA)[number] | null>(null)
+
+  const fotosDaGaleria = snap.fotos
+    .filter((f) => f.data === data && f.tipo === 'galeria')
+    .sort((a, b) => a.criado_em.localeCompare(b.criado_em))
 
   const frase = useMemo(
     () => sortear(FRASES_DO_DIA[plano.tipo], sementeDaData(data)),
@@ -97,9 +104,14 @@ export function TelaDoDia({
       <p className="font-bilhete mb-4 text-xl text-rosa-500">{frase}</p>
 
       <div className="space-y-3">
-        {/* cartinha surpresa */}
-        {cartinhaLiberada && (
-          <ChamadaDaCartinha cartinha={cartinha!} aoAbrir={() => setCartinhaAberta(true)} />
+        {/* a cartinha do dia */}
+        {carta && !ehFuturo && (
+          <ChamadaDaCartinha
+            cartinha={carta}
+            trancada={!cartaLiberada}
+            aviso={avisoDaCarta}
+            aoAbrir={() => setCartinhaAberta(true)}
+          />
         )}
 
         {/* recadinhos */}
@@ -287,6 +299,32 @@ export function TelaDoDia({
           </>
         )}
 
+        {/* fotinhas do dia */}
+        <div className="cartao-solido p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="font-display text-[15px] font-bold">📸 Fotinhas do dia</h3>
+            {fotosDaGaleria.length > 0 && (
+              <span className="rounded-pill bg-rosa-100 px-2.5 py-1 text-[11px] font-bold text-magenta-texto">
+                {fotosDaGaleria.length}
+              </span>
+            )}
+          </div>
+
+          {fotosDaGaleria.length > 0 ? (
+            <GradeDeFotos fotos={fotosDaGaleria} podeApagar={souIsabela} />
+          ) : (
+            <p className="rounded-2xl bg-rosa-50 p-3 text-center text-xs leading-snug text-cinza">
+              manda quantas fotinhas quiser aqui, amor — todas ficam guardadas na Galeria 💗
+            </p>
+          )}
+
+          {!somenteLeitura && (
+            <div className="mt-3">
+              <AdicionarFotos data={data} quantasJaTem={fotosDaGaleria.length} />
+            </div>
+          )}
+        </div>
+
         {/* humor + anotação */}
         <div className="cartao-solido p-4">
           <h3 className="mb-2.5 font-display text-[15px] font-bold">Como me senti hoje</h3>
@@ -338,8 +376,11 @@ export function TelaDoDia({
             if (tarefas.corrida.aplicavel && !tarefas.corrida.feito) patch.corrida_ok = true
             if (tarefas.natacao.aplicavel && !tarefas.natacao.feito) patch.natacao_ok = true
             if (!tarefas.agua.feito) patch.agua_ml = Math.max(dia?.agua_ml ?? 0, meta)
-            vibrar([60, 40, 90])
+            vibrar([60, 40, 90, 40, 140])
             await salvarDia(data, patch)
+            soltarConfete(150)
+            chuvaDeCoracoes(45)
+            setFechouODia(sortear(FECHOU_O_DIA, sementeDaData(data)))
           }}
         />
       </div>
@@ -353,21 +394,32 @@ export function TelaDoDia({
             exit={{ opacity: 0 }}
             className="pointer-events-none fixed inset-0 z-[80] grid place-items-center bg-rosa-500/20 backdrop-blur-[2px]"
           >
-            <motion.p
+            <motion.div
               initial={{ scale: 0.4, rotate: -8 }}
               animate={{ scale: 1, rotate: -2 }}
               transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-              className="font-manuscrita rounded-[26px] bg-white/95 px-8 py-6 text-center text-3xl text-rosa-500 shadow-rosaForte"
+              className="mx-8 rounded-[26px] bg-white/95 px-7 py-6 text-center shadow-rosaForte"
             >
-              {COMEMORACOES.diaPerfeito}
-            </motion.p>
+              <p className="font-manuscrita text-3xl leading-tight text-rosa-500">
+                {COMEMORACOES.diaPerfeito}
+              </p>
+              <p className="font-bilhete mt-2 text-xl leading-snug text-carvao/80">
+                {sortear(ELOGIOS_DO_DIA_COMPLETO, sementeDaData(data))}
+              </p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {cartinhaAberta && cartinha && (
-          <CartinhaAberta cartinha={cartinha} aoFechar={() => setCartinhaAberta(false)} />
+        {cartinhaAberta && carta && cartaLiberada && (
+          <CartinhaAberta cartinha={carta} aoFechar={() => setCartinhaAberta(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fechouODia && (
+          <CartinhaAberta cartinha={fechouODia} aoFechar={() => setFechouODia(null)} />
         )}
       </AnimatePresence>
     </div>

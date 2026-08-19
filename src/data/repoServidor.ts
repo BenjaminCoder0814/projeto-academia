@@ -152,6 +152,11 @@ export const repoServidor: Repo = {
     return { ...foto, data, tipo, storage_path: foto.id }
   },
 
+  async apagarFoto(foto) {
+    await pedir(`/api/fotos/${foto.id}`, { method: 'DELETE', headers: cabecalhos(false) })
+    avisar()
+  },
+
   async urlDaFoto(caminho) {
     return `${API_URL}/api/fotos/${caminho}?chave=${encodeURIComponent(API_CHAVE)}`
   },

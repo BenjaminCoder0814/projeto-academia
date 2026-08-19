@@ -265,6 +265,17 @@ export const repoSupabase: Repo = {
       .upload(caminho, arquivo, { contentType: 'image/jpeg', upsert: false })
     if (erroUpload) throw erroUpload
 
+    // a galeria aceita quantas ela quiser; as outras duas são uma por dia
+    if (tipo === 'galeria') {
+      const { data: linha, error } = await supa()
+        .from('fotos')
+        .insert({ user_id: id, data, tipo, storage_path: caminho })
+        .select('id, data, tipo, storage_path, criado_em')
+        .single()
+      if (error) throw error
+      return linha as Foto
+    }
+
     const { data: anterior } = await supa()
       .from('fotos')
       .select('storage_path')
@@ -284,6 +295,12 @@ export const repoSupabase: Repo = {
       await supa().storage.from(BUCKET_FOTOS).remove([anterior.storage_path])
     }
     return linha as Foto
+  },
+
+  async apagarFoto(foto) {
+    const { error } = await supa().from('fotos').delete().eq('id', foto.id)
+    if (error) throw error
+    await supa().storage.from(BUCKET_FOTOS).remove([foto.storage_path])
   },
 
   async urlDaFoto(caminho) {

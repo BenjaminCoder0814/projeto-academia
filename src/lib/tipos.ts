@@ -27,7 +27,11 @@ export type Dia = {
   nota: string | null
 }
 
-export type TipoFoto = 'evolucao' | 'relogio'
+/**
+ * `evolucao` e `relogio` são uma por dia (a do antes e depois e a prova do treino).
+ * `galeria` é livre: ela manda quantas quiser, todo dia.
+ */
+export type TipoFoto = 'evolucao' | 'relogio' | 'galeria'
 
 export type Foto = {
   id: string

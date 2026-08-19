@@ -2,7 +2,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Camera, ImageUp, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useEstado } from '../data/estado'
-import { COMEMORACOES } from '../conteudo/mensagens'
+import { COMEMORACOES, sortear } from '../conteudo/mensagens'
+import { OBRIGADO_PELAS_FOTOS, SO_UMA_FOTINHA } from '../conteudo/cartas'
+import { chuvaDeCoracoes } from '../lib/confete'
+import { RecadoFlutuante } from './GaleriaDeFotos'
 import { diaMes } from '../lib/datas'
 import { vibrar } from '../lib/feedback'
 import { comprimirFoto } from '../lib/imagem'
@@ -110,8 +113,11 @@ export function CartaoFoto({
   const [camera, setCamera] = useState(false)
   const [selo, setSelo] = useState(false)
   const [mensagem, setMensagem] = useState<string | null>(null)
+  const [recado, setRecado] = useState<{ emoji: string; texto: string } | null>(null)
+  const [progresso, setProgresso] = useState<{ feitas: number; total: number } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const ultimoArquivo = useRef<Blob | null>(null)
+  const aceitaVarias = tipo === 'evolucao'
   const { url } = useUrlFoto(foto?.storage_path)
   const { url: urlFantasma } = useUrlFoto(
     tipo === 'evolucao' ? fotoAnterior?.storage_path : undefined,
@@ -138,7 +144,45 @@ export function CartaoFoto({
     }
   }
 
-  const ocupado = estado === 'preparando' || estado === 'enviando'
+  const ocupado = estado === 'preparando' || estado === 'enviando' || Boolean(progresso)
+
+  /**
+   * Ela escolhe da galeria dela. Na foto do dia pode mandar quantas quiser:
+   * a primeira vira a oficial (a do antes e depois) e as outras entram na
+   * galeria do dia. Uma so ganha birra carinhosa; duas ou mais, agradecimento.
+   */
+  async function processarVarias(arquivos: File[]) {
+    if (!aceitaVarias) {
+      await processar(arquivos[0])
+      return
+    }
+    setMensagem(null)
+    setProgresso({ feitas: 0, total: arquivos.length })
+    try {
+      for (let i = 0; i < arquivos.length; i++) {
+        setEstado(i === 0 ? 'preparando' : 'enviando')
+        const comprimida = await comprimirFoto(arquivos[i])
+        await enviarFoto(data, i === 0 ? 'evolucao' : 'galeria', comprimida)
+        setProgresso({ feitas: i + 1, total: arquivos.length })
+      }
+      vibrar([60, 40, 60])
+      setEstado('parado')
+
+      if (arquivos.length === 1) {
+        setRecado({ emoji: '🥺', texto: sortear(SO_UMA_FOTINHA, Date.now()) })
+      } else {
+        chuvaDeCoracoes(40)
+        setRecado({ emoji: '🥰', texto: sortear(OBRIGADO_PELAS_FOTOS, Date.now()) })
+      }
+      setTimeout(() => setRecado(null), 5200)
+    } catch (e) {
+      console.error(e)
+      setMensagem(e instanceof Error ? e.message : 'Nao deu pra enviar')
+      setEstado('erro')
+    } finally {
+      setProgresso(null)
+    }
+  }
 
   return (
     <div className="cartao-solido relative overflow-hidden p-4">
@@ -168,6 +212,11 @@ export function CartaoFoto({
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-[15px] font-bold">{titulo}</h3>
           <p className="mt-0.5 text-xs leading-snug text-cinza">{descricao}</p>
+          {aceitaVarias && !somenteLeitura && (
+            <p className="mt-1 text-[11px] font-semibold text-magenta-texto">
+              pode escolher várias de uma vez 💗
+            </p>
+          )}
 
           {estado === 'erro' && (
             <p className="mt-2 text-xs font-semibold text-magenta-texto">
@@ -190,26 +239,31 @@ export function CartaoFoto({
                   <button
                     type="button"
                     disabled={ocupado}
-                    onClick={() => (tipo === 'evolucao' ? setCamera(true) : inputRef.current?.click())}
-                    className="botao-principal px-4 py-2.5 text-sm disabled:opacity-50"
-                  >
-                    {estado === 'preparando'
-                      ? 'Preparando…'
-                      : estado === 'enviando'
-                        ? 'Enviando…'
-                        : foto
-                          ? 'Tirar de novo'
-                          : 'Tirar foto 📸'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={ocupado}
                     onClick={() => inputRef.current?.click()}
-                    aria-label="Escolher da galeria"
-                    className="grid h-11 w-11 place-items-center rounded-pill bg-rosa-100 text-rosa-500"
+                    className="botao-principal flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-50"
                   >
-                    <ImageUp size={18} />
+                    <ImageUp size={16} />
+                    {progresso
+                      ? `enviando ${progresso.feitas + 1} de ${progresso.total}…`
+                      : estado === 'preparando'
+                        ? 'Preparando…'
+                        : estado === 'enviando'
+                          ? 'Enviando…'
+                          : foto
+                            ? 'Escolher outra'
+                            : 'Escolher da galeria'}
                   </button>
+                  {aceitaVarias && (
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      onClick={() => setCamera(true)}
+                      aria-label="Tirar na hora com a câmera"
+                      className="grid h-11 w-11 place-items-center rounded-pill bg-rosa-100 text-rosa-500"
+                    >
+                      <Camera size={18} />
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -217,17 +271,25 @@ export function CartaoFoto({
         </div>
       </div>
 
+      {/* sem `capture`: abre a galeria dela, e não a câmera */}
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture={tipo === 'evolucao' ? 'user' : undefined}
+        multiple={aceitaVarias}
         className="hidden"
         onChange={(e) => {
-          const arquivo = e.target.files?.[0]
+          const arquivos = Array.from(e.target.files ?? [])
           e.target.value = ''
-          if (arquivo) void processar(arquivo)
+          if (arquivos.length) void processarVarias(arquivos)
         }}
+      />
+
+      <RecadoFlutuante
+        aberto={Boolean(recado)}
+        emoji={recado?.emoji ?? '💗'}
+        texto={recado?.texto ?? null}
+        aoFechar={() => setRecado(null)}
       />
 
       <AnimatePresence>

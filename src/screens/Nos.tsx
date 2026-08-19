@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion'
 import { ChevronRight, LogOut, Send } from 'lucide-react'
 import { useState } from 'react'
-import { CARTINHAS } from '../conteudo/mensagens'
+import { HORA_QUE_ABRE } from '../conteudo/cartas'
+import { estadoDaCarta } from '../lib/cartas'
+import { diasDoDesafio as todosOsDias } from '../lib/fase'
 import { Armazenamento } from '../components/Armazenamento'
 import { CartinhaAberta, EnvelopeRecado } from '../components/Envelope'
 import { SeletorRolagem } from '../components/SeletorRolagem'
@@ -20,7 +22,6 @@ import {
 import { chuvaDeCoracoes } from '../lib/confete'
 import { dataPorExtenso } from '../lib/datas'
 import { pesoEm } from '../lib/derivados'
-import { diasDoDesafio } from '../lib/fase'
 import { vibrar } from '../lib/feedback'
 
 export function Nos() {
@@ -32,6 +33,7 @@ export function Nos() {
     salvarPerfil,
     salvarPeso,
     metaAguaDe,
+    agora,
     enviarRecado,
     marcarRecadoLido,
     mandarBeijinho,
@@ -41,7 +43,7 @@ export function Nos() {
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
-  const [cartinhaAberta, setCartinhaAberta] = useState<number | null>(null)
+  const [cartinhaAberta, setCartinhaAberta] = useState<string | null>(null)
   const [folha, setFolha] = useState<'nome' | 'altura' | 'peso' | 'formulas' | null>(null)
   const [nome, setNome] = useState(perfil?.nome ?? '')
   const [novaAltura, setNovaAltura] = useState(snap.perfilIsabela?.altura_cm ?? 165)
@@ -55,8 +57,12 @@ export function Nos() {
   const meta = metaDePeso(altura)
   const f = formulasPesoIdeal(altura)
 
-  const indiceDeHoje = diasDoDesafio().find((d) => d.data === hoje)?.indice ?? 0
-  const cartinhasLiberadas = CARTINHAS.filter((c) => c.indiceDoDia <= Math.max(indiceDeHoje, 0))
+  const cartasComData = todosOsDias().map((d) => ({
+    ...estadoDaCarta(d.data, hoje, agora),
+    data: d.data,
+    indice: d.indice,
+  }))
+  const cartinhasLiberadas = cartasComData.filter((c) => c.liberada)
   const recados = [...snap.recados].reverse().slice(0, 12)
 
   async function mandarRecado() {
@@ -132,31 +138,33 @@ export function Nos() {
       {/* cartinhas surpresa */}
       {cartinhasLiberadas.length > 0 && (
         <Cartao>
-          <h2 className="mb-3 font-display text-base font-bold">💌 Cartinhas surpresa</h2>
+          <h2 className="mb-1 font-display text-base font-bold">💌 As cartinhas do desafio</h2>
+          <p className="mb-3 text-[11px] text-cinza">
+            uma por dia — cada uma abre no dia dela, às {HORA_QUE_ABRE}h 💗
+          </p>
           <div className="space-y-2">
-            {CARTINHAS.map((c) => {
-              const liberada = c.indiceDoDia <= indiceDeHoje
-              return (
-                <button
-                  key={c.indiceDoDia}
-                  type="button"
-                  disabled={!liberada}
-                  onClick={() => setCartinhaAberta(c.indiceDoDia)}
-                  className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left ${
-                    liberada ? 'bg-rosa-50' : 'bg-rosa-50/50 opacity-60'
-                  }`}
-                >
-                  <span className="text-2xl">{liberada ? '💌' : '🔒'}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-bilhete block text-xl text-magenta-texto">{c.titulo}</span>
-                    <span className="block text-[11px] text-cinza">
-                      {liberada ? 'toca pra ler de novo' : `abre no dia ${c.indiceDoDia}`}
-                    </span>
+            {cartasComData.map((c) => (
+              <button
+                key={c.data}
+                type="button"
+                disabled={!c.liberada}
+                onClick={() => setCartinhaAberta(c.data)}
+                className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left ${
+                  c.liberada ? 'bg-rosa-50' : 'bg-rosa-50/50 opacity-60'
+                }`}
+              >
+                <span className="text-2xl">{c.liberada ? '💌' : '🔒'}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="font-bilhete block text-xl text-magenta-texto">
+                    {c.liberada ? c.carta?.titulo : `Dia ${c.indice}`}
                   </span>
-                  {liberada && <ChevronRight size={16} className="text-rosa-300" />}
-                </button>
-              )
-            })}
+                  <span className="block text-[11px] text-cinza">
+                    {c.liberada ? 'toca pra ler de novo' : (c.aviso ?? `abre às ${HORA_QUE_ABRE}h do dia`)}
+                  </span>
+                </span>
+                {c.liberada && <ChevronRight size={16} className="text-rosa-300" />}
+              </button>
+            ))}
           </div>
         </Cartao>
       )}
@@ -311,12 +319,14 @@ export function Nos() {
         </dl>
       </Folhinha>
 
-      {cartinhaAberta !== null && (
-        <CartinhaAberta
-          cartinha={CARTINHAS.find((c) => c.indiceDoDia === cartinhaAberta)!}
-          aoFechar={() => setCartinhaAberta(null)}
-        />
-      )}
+      {cartinhaAberta !== null &&
+        (() => {
+          const escolhida = cartasComData.find((c) => c.data === cartinhaAberta)
+          if (!escolhida?.carta || !escolhida.liberada) return null
+          return (
+            <CartinhaAberta cartinha={escolhida.carta} aoFechar={() => setCartinhaAberta(null)} />
+          )
+        })()}
     </Tela>
   )
 }

@@ -19,14 +19,16 @@ import { Treino } from './screens/Treino'
 
 // telas mais pesadas entram sob demanda
 const Evolucao = lazy(() => import('./screens/Evolucao').then((m) => ({ default: m.Evolucao })))
+const Galeria = lazy(() => import('./screens/Galeria').then((m) => ({ default: m.Galeria })))
 const Nos = lazy(() => import('./screens/Nos').then((m) => ({ default: m.Nos })))
 const Final = lazy(() => import('./screens/Final').then((m) => ({ default: m.Final })))
 
-type Aba = 'calendario' | 'treino' | 'evolucao' | 'nos'
+type Aba = 'calendario' | 'treino' | 'galeria' | 'evolucao' | 'nos'
 
 const ABAS: { id: Aba; rotulo: string; emoji: string }[] = [
   { id: 'calendario', rotulo: 'Calendário', emoji: '📅' },
   { id: 'treino', rotulo: 'Treino', emoji: '🏃‍♀️' },
+  { id: 'galeria', rotulo: 'Galeria', emoji: '📸' },
   { id: 'evolucao', rotulo: 'Evolução', emoji: '📈' },
   { id: 'nos', rotulo: 'Nós', emoji: '💗' },
 ]
@@ -99,6 +101,7 @@ export function App() {
                     <CalendarioTela aoIrParaTreino={() => setAba('treino')} />
                   )}
                   {aba === 'treino' && <Treino />}
+                  {aba === 'galeria' && <Galeria />}
                   {aba === 'evolucao' && <Evolucao />}
                   {aba === 'nos' && <Nos />}
                 </Suspense>
@@ -123,7 +126,7 @@ export function App() {
                     }}
                     aria-label={a.rotulo}
                     aria-current={ativa ? 'page' : undefined}
-                    className="relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1.5"
+                    className="relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-[20px] px-0.5 py-1.5"
                   >
                     {ativa && (
                       <motion.span
@@ -132,9 +135,9 @@ export function App() {
                         className="absolute inset-0 rounded-[20px] bg-rosa-100"
                       />
                     )}
-                    <span className="relative z-10 text-base leading-none">{a.emoji}</span>
+                    <span className="relative z-10 text-[15px] leading-none">{a.emoji}</span>
                     <span
-                      className={`relative z-10 font-display text-[10px] font-bold ${
+                      className={`relative z-10 font-display text-[9px] font-bold leading-tight ${
                         ativa ? 'text-rosa-500' : 'text-cinza'
                       }`}
                     >

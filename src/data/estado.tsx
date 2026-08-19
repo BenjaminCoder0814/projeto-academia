@@ -12,7 +12,15 @@ import { TEM_SERVIDOR, TEM_SUPABASE } from '../lib/config'
 import { hojeISO } from '../lib/datas'
 import { metaAguaDoDia } from '../lib/calculos'
 import { pesoEm } from '../lib/derivados'
-import { snapshotVazio, type Dia, type Papel, type Perfil, type Snapshot, type TipoFoto } from '../lib/tipos'
+import {
+  snapshotVazio,
+  type Dia,
+  type Foto,
+  type Papel,
+  type Perfil,
+  type Snapshot,
+  type TipoFoto,
+} from '../lib/tipos'
 import type { Repo } from './repo'
 import { repoLocal } from './repoLocal'
 
@@ -24,6 +32,8 @@ type Estado = {
   souIsabela: boolean
   snap: Snapshot
   hoje: string
+  /** relógio que anda de 30 em 30s — é o que faz a carta abrir às 14h sozinha */
+  agora: Date
   metaAguaDe: (data: string) => number
   diaDe: (data: string) => Dia | undefined
   recarregar: () => Promise<void>
@@ -34,6 +44,7 @@ type Estado = {
   salvarPeso: (data: string, kg: number) => Promise<void>
   salvarDia: (data: string, patch: Partial<Dia>) => Promise<void>
   enviarFoto: (data: string, tipo: TipoFoto, arquivo: Blob) => Promise<void>
+  apagarFoto: (foto: Foto) => Promise<void>
   urlDaFoto: (caminho: string) => Promise<string>
   enviarRecado: (data: string, texto: string) => Promise<void>
   marcarRecadoLido: (id: string) => Promise<void>
@@ -49,6 +60,7 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [snap, setSnap] = useState<Snapshot>(snapshotVazio)
   const [hoje, setHoje] = useState(hojeISO())
+  const [agora, setAgora] = useState(() => new Date())
   const repoRef = useRef<Repo>(repoLocal)
   const snapRef = useRef<Snapshot>(snapshotVazio)
 
@@ -119,8 +131,9 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
    */
   useEffect(() => {
     const conferir = () => {
-      const agora = hojeISO()
-      setHoje((antigo) => (antigo === agora ? antigo : agora))
+      const dia = hojeISO()
+      setHoje((antigo) => (antigo === dia ? antigo : dia))
+      setAgora(new Date())
     }
 
     const t = setInterval(conferir, 30_000)
@@ -162,6 +175,7 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
       souIsabela,
       snap,
       hoje,
+      agora,
       metaAguaDe,
       diaDe,
       recarregar,
@@ -199,6 +213,10 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
         await repo.enviarFoto(data, tipo, arquivo)
         await recarregar()
       },
+      apagarFoto: async (foto) => {
+        await repo.apagarFoto(foto)
+        await recarregar()
+      },
       urlDaFoto: (caminho) => repo.urlDaFoto(caminho),
       enviarRecado: async (data, texto) => {
         await repo.enviarRecado(data, texto)
@@ -217,7 +235,7 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
         await recarregar()
       },
     }),
-    [repo, pronto, perfil, souIsabela, snap, hoje, metaAguaDe, diaDe, recarregar, isabela],
+    [repo, pronto, perfil, souIsabela, snap, hoje, agora, metaAguaDe, diaDe, recarregar, isabela],
   )
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>

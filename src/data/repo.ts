@@ -17,6 +17,7 @@ export type Repo = {
   salvarPeso(data: string, pesoKg: number): Promise<void>
   salvarDia(data: string, patch: Partial<Dia>, metaMl: number): Promise<void>
   enviarFoto(data: string, tipo: TipoFoto, arquivo: Blob): Promise<Foto>
+  apagarFoto(foto: Foto): Promise<void>
   urlDaFoto(caminho: string): Promise<string>
 
   enviarRecado(data: string, texto: string): Promise<Recado>
