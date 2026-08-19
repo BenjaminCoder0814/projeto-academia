@@ -8,3 +8,6 @@ tsconfig.tsbuildinfo
 
 # banco, fotinhas e chave do servidor local
 servidor/dados
+
+# scripts de verificação temporários
+.*.mjs
