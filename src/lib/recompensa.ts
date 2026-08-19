@@ -13,8 +13,8 @@ import type { Snapshot } from './tipos'
  *   • Sexta: bônus. Se ela for em TODAS, ganha o presente surpresa dele.
  *   • Sábado e domingo: dia do namorado — não entra na conta.
  *
- * O lookinho de academia é o acordo com a mãe dela: precisa dos dias
- * obrigatórios todos feitos.
+ * O lookinho de academia é o presente que ela vai dar pra ela mesma:
+ * precisa dos dias obrigatórios todos feitos.
  * ===================================================================== */
 
 export const RECOMPENSA_INICIO = '2026-08-11'

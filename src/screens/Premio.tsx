@@ -97,18 +97,18 @@ export function Premio({ aoVerEvolucao }: { aoVerEvolucao?: () => void }) {
             <span className="text-3xl">🎽</span>
             <div className="min-w-0 flex-1">
               <p className="font-display text-base font-bold">Lookinho de academia</p>
-              <p className="text-xs text-cinza">o combinado com a sua mãe</p>
+              <p className="text-xs text-cinza">o presente que você vai se dar 💗</p>
               <p className="mt-2 text-sm font-semibold">
                 {r.lookGarantido ? (
-                  <span className="text-verde">conquistado! 🏆</span>
+                  <span className="text-verde">conquistado — vai lá comprar o seu 🏆</span>
                 ) : r.lookEmJogo ? (
                   <span className="text-magenta-texto">
                     tá de pé — nenhum dia perdido até agora 💗
                   </span>
                 ) : (
                   <span className="text-carvao/70">
-                    {r.perdidos} {r.perdidos === 1 ? 'dia ficou' : 'dias ficaram'} pra trás — fala
-                    com ela, vocês combinam 🥺
+                    {r.perdidos} {r.perdidos === 1 ? 'dia ficou' : 'dias ficaram'} pra trás — mas
+                    quem decide isso é você, viu? 🥺
                   </span>
                 )}
               </p>
