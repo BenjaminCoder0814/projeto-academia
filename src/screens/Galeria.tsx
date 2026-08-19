@@ -51,6 +51,7 @@ export function Galeria() {
       {visiveis.map((d) => {
         const plano = planoDoDia(d.data)
         const ehHoje = d.data === hoje
+        const encerrado = diffDias(hoje, d.data) < 0
         return (
           <Cartao key={d.data} className={ehHoje ? 'ring-2 ring-rosa-300' : ''}>
             <div className="mb-3 flex items-start justify-between gap-3">
@@ -61,6 +62,7 @@ export function Galeria() {
                 <p className="text-xs text-cinza">
                   Dia {d.indice} de 15 · {plano.legenda}
                   {ehHoje ? ' · hoje 📍' : ''}
+                  {encerrado ? ' · encerrado 🔒' : ''}
                 </p>
               </div>
               {d.fotos.length > 0 && (
@@ -71,14 +73,14 @@ export function Galeria() {
             </div>
 
             {d.fotos.length > 0 ? (
-              <GradeDeFotos fotos={d.fotos} podeApagar={souIsabela} />
+              <GradeDeFotos fotos={d.fotos} podeApagar={souIsabela && !encerrado} />
             ) : (
               <p className="rounded-2xl bg-rosa-50 p-4 text-center text-xs text-cinza">
                 nenhuma fotinha nesse dia ainda 🌸
               </p>
             )}
 
-            {souIsabela && (
+            {souIsabela && !encerrado && (
               <div className="mt-3">
                 <AdicionarFotos
                   data={d.data}

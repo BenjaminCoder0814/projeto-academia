@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Camera, ImageUp, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useEstado } from '../data/estado'
-import { COMEMORACOES, sortear } from '../conteudo/mensagens'
+import { COMEMORACOES, TEMPO_NA_TELA, sortear } from '../conteudo/mensagens'
 import { OBRIGADO_PELAS_FOTOS, SO_UMA_FOTINHA } from '../conteudo/cartas'
 import { chuvaDeCoracoes } from '../lib/confete'
 import { RecadoFlutuante } from './GaleriaDeFotos'
@@ -135,7 +135,7 @@ export function CartaoFoto({
       vibrar(60)
       if (tipo === 'relogio') {
         setSelo(true)
-        setTimeout(() => setSelo(false), 2600)
+        setTimeout(() => setSelo(false), 4200)
       }
     } catch (e) {
       console.error(e)
@@ -174,7 +174,7 @@ export function CartaoFoto({
         chuvaDeCoracoes(40)
         setRecado({ emoji: '🥰', texto: sortear(OBRIGADO_PELAS_FOTOS, Date.now()) })
       }
-      setTimeout(() => setRecado(null), 5200)
+      setTimeout(() => setRecado(null), TEMPO_NA_TELA)
     } catch (e) {
       console.error(e)
       setMensagem(e instanceof Error ? e.message : 'Nao deu pra enviar')

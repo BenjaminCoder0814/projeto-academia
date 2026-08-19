@@ -1,8 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { COMEMORACOES, FRASES_DO_DIA, sementeDaData, sortear } from '../conteudo/mensagens'
-import { ELOGIOS_DO_DIA_COMPLETO, FECHOU_O_DIA } from '../conteudo/cartas'
+import {
+  COMEMORACOES,
+  FRASES_DO_DIA,
+  TEMPO_NA_TELA,
+  sementeDaData,
+  sortear,
+} from '../conteudo/mensagens'
+import { DIA_SEM_FOTO, ELOGIOS_DO_DIA_COMPLETO, FECHOU_O_DIA } from '../conteudo/cartas'
 import { estadoDaCarta } from '../lib/cartas'
 import { AdicionarFotos, GradeDeFotos } from './GaleriaDeFotos'
 import { useEstado } from '../data/estado'
@@ -40,9 +46,11 @@ export function TelaDoDia({
   const tarefas = tarefasDoDia(data, dia, snap.fotos)
   const meta = metaAguaDe(data)
   const perfeito = ehDiaPerfeito(data, tarefas)
-  const somenteLeitura = !souIsabela
   const ehHoje = data === hoje
   const ehFuturo = diffDias(hoje, data) > 0
+  /** dia que já passou não se mexe mais: fica de recordação, só pra ver */
+  const encerrado = diffDias(hoje, data) < 0
+  const somenteLeitura = !souIsabela || encerrado
 
   const indiceDoDia = useMemo(
     () => diasDoDesafio().find((d) => d.data === data)?.indice ?? 0,
@@ -52,6 +60,8 @@ export function TelaDoDia({
   const [cartinhaAberta, setCartinhaAberta] = useState(false)
   const [fechouODia, setFechouODia] = useState<(typeof FECHOU_O_DIA)[number] | null>(null)
 
+  const temAlgumaFoto = snap.fotos.some((f) => f.data === data)
+  const [semFoto, setSemFoto] = useState(false)
   const fotosDaGaleria = snap.fotos
     .filter((f) => f.data === data && f.tipo === 'galeria')
     .sort((a, b) => a.criado_em.localeCompare(b.criado_em))
@@ -73,7 +83,7 @@ export function TelaDoDia({
       soltarConfete(130)
       chuvaDeCoracoes(40)
       vibrar([90, 60, 90, 60, 160])
-      const t = setTimeout(() => setFesta(false), 2800)
+      const t = setTimeout(() => setFesta(false), TEMPO_NA_TELA)
       return () => clearTimeout(t)
     }
     if (!perfeito) jaFestejou.current = false
@@ -96,12 +106,20 @@ export function TelaDoDia({
           </h2>
           <p className="text-xs text-cinza">
             Dia {indiceDoDia} de 15{ehHoje ? ' · hoje 📍' : ''}
+            {encerrado ? ' · encerrado 🔒' : ''}
           </p>
         </div>
         <Etiqueta texto={selo.texto} cor={selo.cor} className="mt-1 shrink-0" />
       </div>
 
       <p className="font-bilhete mb-4 text-xl text-rosa-500">{frase}</p>
+
+      {encerrado && souIsabela && (
+        <p className="mb-4 rounded-2xl bg-rosa-100 p-3 text-center text-xs leading-snug text-carvao/70">
+          esse dia já fechou 🔒 — dá pra ver as fotinhas e reler a cartinha, mas não dá mais pra
+          mexer 💗
+        </p>
+      )}
 
       <div className="space-y-3">
         {/* a cartinha do dia */}
@@ -378,9 +396,13 @@ export function TelaDoDia({
             if (!tarefas.agua.feito) patch.agua_ml = Math.max(dia?.agua_ml ?? 0, meta)
             vibrar([60, 40, 90, 40, 140])
             await salvarDia(data, patch)
-            soltarConfete(150)
-            chuvaDeCoracoes(45)
-            setFechouODia(sortear(FECHOU_O_DIA, sementeDaData(data)))
+            if (temAlgumaFoto) {
+              soltarConfete(150)
+              chuvaDeCoracoes(45)
+              setFechouODia(sortear(FECHOU_O_DIA, sementeDaData(data)))
+            } else {
+              setSemFoto(true)
+            }
           }}
         />
       </div>
@@ -420,6 +442,49 @@ export function TelaDoDia({
       <AnimatePresence>
         {fechouODia && (
           <CartinhaAberta cartinha={fechouODia} aoFechar={() => setFechouODia(null)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {semFoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[92] grid place-items-center bg-carvao/45 px-7 backdrop-blur-[3px]"
+          >
+            <motion.div
+              initial={{ scale: 0.7, y: 24 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 17 }}
+              className="w-full max-w-xs rounded-[28px] bg-white p-6 text-center shadow-rosaForte"
+            >
+              <motion.p
+                animate={{ rotate: [-3, 3, -3] }}
+                transition={{ duration: 2.4, repeat: Infinity }}
+                className="text-6xl"
+              >
+                🥺
+              </motion.p>
+              <p className="font-manuscrita mt-2 text-2xl leading-tight text-magenta-texto">
+                {DIA_SEM_FOTO.titulo}
+              </p>
+              <p className="font-bilhete mt-3 whitespace-pre-line text-xl leading-snug text-carvao/80">
+                {DIA_SEM_FOTO.texto}
+              </p>
+              <Botao className="mt-4 w-full" onClick={() => setSemFoto(false)}>
+                vou mandar uma agora 📸
+              </Botao>
+              <button
+                type="button"
+                onClick={() => setSemFoto(false)}
+                className="mt-1 w-full py-2 text-xs font-semibold text-cinza"
+              >
+                hoje não dá 🥺
+              </button>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

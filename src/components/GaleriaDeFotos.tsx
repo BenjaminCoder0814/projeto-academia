@@ -3,7 +3,7 @@ import { ImagePlus, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { OBRIGADO_PELAS_FOTOS } from '../conteudo/cartas'
 import { useEstado } from '../data/estado'
-import { sortear } from '../conteudo/mensagens'
+import { TEMPO_NA_TELA, sortear } from '../conteudo/mensagens'
 import { chuvaDeCoracoes } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
 import { comprimirFoto } from '../lib/imagem'
@@ -47,7 +47,7 @@ export function AdicionarFotos({
       if (quantasJaTem + enviadas >= 2) {
         setObrigado(sortear(OBRIGADO_PELAS_FOTOS, Date.now()))
         chuvaDeCoracoes(35)
-        setTimeout(() => setObrigado(null), 5000)
+        setTimeout(() => setObrigado(null), TEMPO_NA_TELA)
       }
     } catch (e) {
       console.error(e)

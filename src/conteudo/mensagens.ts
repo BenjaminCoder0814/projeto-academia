@@ -73,6 +73,13 @@ export const AGUA_ALEM_DA_META = [
   'a meta era o começo, né? 💗',
 ]
 
+/**
+ * Quanto tempo os recadinhos ficam na tela, em milissegundos.
+ * Benjamin: se ainda achar rápido, é só aumentar aqui — vale pra todos.
+ * (ela também pode tocar na tela pra fechar antes)
+ */
+export const TEMPO_NA_TELA = 9000
+
 /** Comemorações. */
 export const COMEMORACOES = {
   diaPerfeito: 'DIA PERFEITO 💗',

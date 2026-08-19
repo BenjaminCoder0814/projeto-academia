@@ -1,7 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { AGUA_ALEM_DA_META, COMEMORACOES, FESTA_DA_AGUA, sortear } from '../conteudo/mensagens'
+import {
+  AGUA_ALEM_DA_META,
+  COMEMORACOES,
+  FESTA_DA_AGUA,
+  TEMPO_NA_TELA,
+  sortear,
+} from '../conteudo/mensagens'
 import { litros } from '../lib/calculos'
 import { chuvaDeCoracoes, soltarConfete } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
@@ -41,7 +47,7 @@ export function CartaoAgua({
 
   useEffect(() => {
     if (!festa) return
-    const t = setTimeout(() => setFesta(false), 4200)
+    const t = setTimeout(() => setFesta(false), TEMPO_NA_TELA)
     return () => clearTimeout(t)
   }, [festa])
 

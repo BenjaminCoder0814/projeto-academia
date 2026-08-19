@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import { Cabecalho } from './components/Cabecalho'
 import { ConviteInstalar } from './components/ConviteInstalar'
 import { CarregandoTela, FundoFofo } from './components/ui'
-import { COMEMORACOES } from './conteudo/mensagens'
+import { COMEMORACOES, TEMPO_NA_TELA } from './conteudo/mensagens'
 import { useEstado } from './data/estado'
 import { DESAFIO_FIM } from './lib/calculos'
 import { TEM_SERVIDOR, TEM_SUPABASE } from './lib/config'
@@ -187,7 +187,7 @@ function OuvidorDeBeijinhos() {
   // quando a lista de beijinhos novos zera logo depois de marcar como visto
   useEffect(() => {
     if (!aviso) return
-    const t = setTimeout(() => setAviso(false), 3400)
+    const t = setTimeout(() => setAviso(false), TEMPO_NA_TELA)
     return () => clearTimeout(t)
   }, [aviso])
 

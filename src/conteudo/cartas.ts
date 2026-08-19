@@ -280,6 +280,16 @@ export const OBRIGADO_PELAS_FOTOS = [
   'obrigado por me deixar acompanhar de pertinho 💗',
 ]
 
+/** Quando ela fecha o dia sem nenhuma fotinha. Tristinho, nunca bravo. */
+export const DIA_SEM_FOTO = {
+  titulo: 'esse dia foi sem foto 🥺',
+  texto: `Fica um buraquinho no álbum da gente bem no dia de hoje.
+
+Não é cobrança, amor — é saudade adiantada. Eu gosto de ver como você tava em cada dia desse.
+
+Se ainda der tempo hoje, manda uma pra mim? 💗`,
+}
+
 /** Quando ela manda só uma fotinha do dia — birra carinhosa, nunca cobrança. */
 export const SO_UMA_FOTINHA = [
   'poxa, só uma? 🥺 seu amor aqui merece mais fotinhas suas 💗',
