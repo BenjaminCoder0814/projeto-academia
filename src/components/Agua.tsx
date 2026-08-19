@@ -7,7 +7,7 @@ import { soltarConfete } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
 import { Botao, NumeroAnimado } from './ui'
 
-const RAPIDOS = [200, 300, 500]
+const RAPIDOS = [200, 300, 500, 620]
 
 export function CartaoAgua({
   aguaMl,
