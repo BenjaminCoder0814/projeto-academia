@@ -20,16 +20,19 @@ import { Treino } from './screens/Treino'
 // telas mais pesadas entram sob demanda
 const Evolucao = lazy(() => import('./screens/Evolucao').then((m) => ({ default: m.Evolucao })))
 const Galeria = lazy(() => import('./screens/Galeria').then((m) => ({ default: m.Galeria })))
+const Refeicoes = lazy(() => import('./screens/Refeicoes').then((m) => ({ default: m.Refeicoes })))
+const Premio = lazy(() => import('./screens/Premio').then((m) => ({ default: m.Premio })))
 const Nos = lazy(() => import('./screens/Nos').then((m) => ({ default: m.Nos })))
 const Final = lazy(() => import('./screens/Final').then((m) => ({ default: m.Final })))
 
-type Aba = 'calendario' | 'treino' | 'galeria' | 'evolucao' | 'nos'
+type Aba = 'calendario' | 'treino' | 'galeria' | 'refeicoes' | 'premio' | 'evolucao' | 'nos'
 
 const ABAS: { id: Aba; rotulo: string; emoji: string }[] = [
-  { id: 'calendario', rotulo: 'Calendário', emoji: '📅' },
+  { id: 'calendario', rotulo: 'Dias', emoji: '📅' },
   { id: 'treino', rotulo: 'Treino', emoji: '🏃‍♀️' },
-  { id: 'galeria', rotulo: 'Galeria', emoji: '📸' },
-  { id: 'evolucao', rotulo: 'Evolução', emoji: '📈' },
+  { id: 'premio', rotulo: 'Prêmio', emoji: '🎁' },
+  { id: 'galeria', rotulo: 'Fotos', emoji: '📸' },
+  { id: 'refeicoes', rotulo: 'Comida', emoji: '🍽️' },
   { id: 'nos', rotulo: 'Nós', emoji: '💗' },
 ]
 
@@ -102,6 +105,8 @@ export function App() {
                   )}
                   {aba === 'treino' && <Treino />}
                   {aba === 'galeria' && <Galeria />}
+                  {aba === 'refeicoes' && <Refeicoes />}
+                  {aba === 'premio' && <Premio aoVerEvolucao={() => setAba('evolucao')} />}
                   {aba === 'evolucao' && <Evolucao />}
                   {aba === 'nos' && <Nos />}
                 </Suspense>

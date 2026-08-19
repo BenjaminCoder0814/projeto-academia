@@ -280,6 +280,28 @@ export const OBRIGADO_PELAS_FOTOS = [
   'obrigado por me deixar acompanhar de pertinho 💗',
 ]
 
+/**
+ * A frase de incentivo que aparece na aba do prêmio — uma por dia,
+ * escolhida pela data, então todo dia é uma diferente.
+ */
+export const MOTIVACIONAIS = [
+  'cada dia desses é um pedacinho do seu lookinho novo 🎽',
+  'você não tá treinando por mim, e é por isso que eu me orgulho tanto 💗',
+  'a Isabela de daqui a um mês tá torcendo pela de hoje 🥺',
+  'olha a porcentagem subindo — isso aí é você, inteirinha',
+  'disciplina é amor próprio em forma de rotina, amor 💗',
+  'o difícil já passou: agora é só não soltar a mão 🤍',
+  'ninguém precisa ver pra valer. mas eu tô vendo, e tô babando',
+  'seu corpo agradece, e eu agradeço junto 🥰',
+  'você é a prova de que decisão vale mais que vontade 💪',
+  'mais um dia perto do prêmio, e mais um motivo de orgulho pra mim',
+  'não precisa ser perfeito, precisa ser hoje 💗',
+  'a sua teimosia é linda quando é a favor de você',
+  'se hoje tá difícil, faz do jeito difícil mesmo. depois eu te abraço 🥺',
+  'você já chegou mais longe do que a maioria chega — segue',
+  'te amo, e tenho orgulho de você todo santo dia 💗',
+]
+
 /** Quando ela fecha o dia sem nenhuma fotinha. Tristinho, nunca bravo. */
 export const DIA_SEM_FOTO = {
   titulo: 'esse dia foi sem foto 🥺',
@@ -297,6 +319,31 @@ export const SO_UMA_FOTINHA = [
   'aceito, mas fica devendo — manda mais uma pra mim 💗',
   'só uma fotinha? 🥺 tá bom… mas amanhã quero mais',
 ]
+
+/**
+ * As broncas fofas das refeições. Nunca bravas de verdade — é ciúme de
+ * quem quer ver ela comendo direito.
+ */
+export const BRONCAS = {
+  semCafe: [
+    'ê, moça… almoçando e o café da manhã? 🥺 come direito, vai',
+    'peraí: pulou o café da manhã de novo? não vale 🥺💗',
+    'você sabe que eu ia perguntar isso: cadê o café da manhã? 💗',
+  ],
+  semAlmoco: [
+    'janta sem almoço, amor? 🥺 assim você me preocupa',
+    'e o almoço, sumiu? come direitinho pra mim 💗',
+    'não pode pular refeição, minha linda 🥺 amanhã eu quero ver as três',
+  ],
+  cafeAtrasado: [
+    'já passou das 10h e nada de café da manhã 🥺 come alguma coisa, vai',
+    'bom dia, amor! seu café da manhã tá me devendo uma fotinha ☕💗',
+  ],
+  tudoCerto: [
+    'as três refeições no capricho hoje 🥰 assim que se faz',
+    'comeu direitinho hoje — é isso que eu queria ver 💗',
+  ],
+}
 
 /** Elogios de quando ela fecha o dia inteirinho. */
 export const ELOGIOS_DO_DIA_COMPLETO = [

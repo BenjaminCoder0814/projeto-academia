@@ -31,7 +31,15 @@ export type Dia = {
  * `evolucao` e `relogio` são uma por dia (a do antes e depois e a prova do treino).
  * `galeria` é livre: ela manda quantas quiser, todo dia.
  */
-export type TipoFoto = 'evolucao' | 'relogio' | 'galeria'
+export type TipoFoto = 'evolucao' | 'relogio' | 'galeria' | 'cafe' | 'almoco' | 'janta'
+
+export type TipoRefeicao = Extract<TipoFoto, 'cafe' | 'almoco' | 'janta'>
+
+export const REFEICOES: { tipo: TipoRefeicao; nome: string; emoji: string; ordem: number }[] = [
+  { tipo: 'cafe', nome: 'Café da manhã', emoji: '☕', ordem: 1 },
+  { tipo: 'almoco', nome: 'Almoço', emoji: '🍽️', ordem: 2 },
+  { tipo: 'janta', nome: 'Janta', emoji: '🌙', ordem: 3 },
+]
 
 export type Foto = {
   id: string

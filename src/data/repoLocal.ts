@@ -74,7 +74,7 @@ async function migrarDoLocalStorage() {
 /* ------------------------------------------------------------------ */
 
 const chaveMeta = (data: string, tipo: TipoFoto, id?: string) =>
-  tipo === 'galeria' ? `foto:${data}:galeria:${id}` : `foto:${data}:${tipo}`
+  tipo === 'evolucao' ? `foto:${data}:evolucao` : `foto:${data}:${tipo}:${id}`
 
 async function listarFotos(): Promise<Foto[]> {
   const db = await import('./bancoLocal').then((m) => m.abrirBanco())
@@ -193,7 +193,7 @@ export const repoLocal: Repo = {
   },
 
   async enviarFoto(data, tipo: TipoFoto, arquivo) {
-    const marca = tipo === 'galeria' ? `-${Date.now().toString(36)}` : ''
+    const marca = tipo === 'evolucao' ? '' : `-${Date.now().toString(36)}`
     const caminho = `local/${data}-${tipo}${marca}`
     await guardar(LOJAS.fotos, arquivo, caminho)
     const foto: Foto = {

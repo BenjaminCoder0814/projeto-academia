@@ -77,13 +77,13 @@ db.exec(`
     id text primary key,
     user_id text not null,
     data text not null,
-    tipo text not null check (tipo in ('evolucao','relogio','galeria')),
+    tipo text not null check (tipo in ('evolucao','relogio','galeria','cafe','almoco','janta')),
     arquivo text not null,
     criado_em text default (datetime('now'))
   );
 
-  create unique index if not exists fotos_uma_por_tipo
-    on fotos (user_id, data, tipo) where tipo in ('evolucao','relogio');
+  create unique index if not exists fotos_uma_por_dia
+    on fotos (user_id, data, tipo) where tipo = 'evolucao';
 
   create table if not exists recados (
     id text primary key,
@@ -305,7 +305,7 @@ const servidor = createServer(async (req, res) => {
 
       // a galeria aceita quantas ela quiser; as outras duas são uma por dia
       const anterior =
-        tipo === 'galeria'
+        tipo !== 'evolucao'
           ? null
           : db
               .prepare('select id from fotos where user_id = ? and data = ? and tipo = ?')

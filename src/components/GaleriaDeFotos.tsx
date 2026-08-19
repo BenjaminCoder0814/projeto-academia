@@ -7,7 +7,7 @@ import { TEMPO_NA_TELA, sortear } from '../conteudo/mensagens'
 import { chuvaDeCoracoes } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
 import { comprimirFoto } from '../lib/imagem'
-import type { Foto } from '../lib/tipos'
+import type { Foto, TipoFoto } from '../lib/tipos'
 import { useUrlFoto } from './Fotos'
 import { Botao, Esqueleto } from './ui'
 
@@ -19,10 +19,18 @@ export function AdicionarFotos({
   data,
   quantasJaTem,
   rotulo = 'Adicionar fotinhas 📸',
+  tipo = 'galeria',
+  semDica,
+  aoTerminar,
 }: {
   data: string
   quantasJaTem: number
   rotulo?: string
+  tipo?: TipoFoto
+  /** esconde a linha "pode escolher várias" (nas refeições fica poluído) */
+  semDica?: boolean
+  /** chamado depois que as fotos subiram, com quantas foram */
+  aoTerminar?: (quantidade: number) => void
 }) {
   const { enviarFoto } = useEstado()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -37,14 +45,17 @@ export function AdicionarFotos({
     try {
       for (const arquivo of arquivos) {
         const comprimida = await comprimirFoto(arquivo)
-        await enviarFoto(data, 'galeria', comprimida)
+        await enviarFoto(data, tipo, comprimida)
         enviadas++
         setEnviando({ feitas: enviadas, total: arquivos.length })
       }
       vibrar([60, 40, 60])
 
-      // mais de uma fotinha no dia merece agradecimento
-      if (quantasJaTem + enviadas >= 2) {
+      aoTerminar?.(enviadas)
+
+      // mais de uma fotinha no dia merece agradecimento (nas refeições quem
+      // fala é a própria tela, com as broncas dela)
+      if (tipo === 'galeria' && quantasJaTem + enviadas >= 2) {
         setObrigado(sortear(OBRIGADO_PELAS_FOTOS, Date.now()))
         chuvaDeCoracoes(35)
         setTimeout(() => setObrigado(null), TEMPO_NA_TELA)
@@ -72,9 +83,11 @@ export function AdicionarFotos({
         {enviando ? `enviando ${enviando.feitas + 1} de ${enviando.total}…` : rotulo}
       </Botao>
 
-      <p className="mt-1.5 text-center text-[11px] text-cinza">
-        pode escolher várias de uma vez, da sua galeria 💗
-      </p>
+      {!semDica && (
+        <p className="mt-1.5 text-center text-[11px] text-cinza">
+          pode escolher várias de uma vez, da sua galeria 💗
+        </p>
+      )}
 
       {erro && <p className="mt-2 text-center text-sm font-semibold text-magenta-texto">{erro}</p>}
 

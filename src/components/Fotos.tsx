@@ -9,6 +9,7 @@ import { RecadoFlutuante } from './GaleriaDeFotos'
 import { diaMes } from '../lib/datas'
 import { vibrar } from '../lib/feedback'
 import { comprimirFoto } from '../lib/imagem'
+import { lerRelogio } from '../lib/leituraDoRelogio'
 import type { Foto, TipoFoto } from '../lib/tipos'
 import { CameraGuiada } from './CameraGuiada'
 import { Esqueleto } from './ui'
@@ -99,6 +100,7 @@ export function CartaoFoto({
   foto,
   fotoAnterior,
   somenteLeitura,
+  aoLerRelogio,
 }: {
   titulo: string
   descricao: string
@@ -107,6 +109,8 @@ export function CartaoFoto({
   foto?: Foto
   fotoAnterior?: Foto
   somenteLeitura?: boolean
+  /** o que o OCR achou na tela do relógio (já somado das fotos mandadas agora) */
+  aoLerRelogio?: (leitura: { calorias: number | null; fcMedia: number | null }) => void
 }) {
   const { enviarFoto } = useEstado()
   const [estado, setEstado] = useState<EstadoEnvio>('parado')
@@ -117,7 +121,10 @@ export function CartaoFoto({
   const [progresso, setProgresso] = useState<{ feitas: number; total: number } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const ultimoArquivo = useRef<Blob | null>(null)
-  const aceitaVarias = tipo === 'evolucao'
+  const [lendo, setLendo] = useState(false)
+  const [lido, setLido] = useState<{ calorias: number | null; fcMedia: number | null } | null>(null)
+  // só a foto oficial do dia é uma só; relógio e resto aceitam várias
+  const aceitaVarias = tipo !== 'relogio' || true
   const { url } = useUrlFoto(foto?.storage_path)
   const { url: urlFantasma } = useUrlFoto(
     tipo === 'evolucao' ? fotoAnterior?.storage_path : undefined,
@@ -144,7 +151,8 @@ export function CartaoFoto({
     }
   }
 
-  const ocupado = estado === 'preparando' || estado === 'enviando' || Boolean(progresso)
+  const ocupado =
+    estado === 'preparando' || estado === 'enviando' || Boolean(progresso) || lendo
 
   /**
    * Ela escolhe da galeria dela. Na foto do dia pode mandar quantas quiser:
@@ -152,11 +160,48 @@ export function CartaoFoto({
    * galeria do dia. Uma so ganha birra carinhosa; duas ou mais, agradecimento.
    */
   async function processarVarias(arquivos: File[]) {
-    if (!aceitaVarias) {
-      await processar(arquivos[0])
+    setMensagem(null)
+
+    // relógio: cada foto entra e o OCR soma as calorias das que ela mandar
+    if (tipo === 'relogio') {
+      setProgresso({ feitas: 0, total: arquivos.length })
+      let somaCalorias = 0
+      const batimentos: number[] = []
+      try {
+        for (let i = 0; i < arquivos.length; i++) {
+          setEstado('enviando')
+          const comprimida = await comprimirFoto(arquivos[i])
+          await enviarFoto(data, 'relogio', comprimida)
+          setProgresso({ feitas: i + 1, total: arquivos.length })
+
+          setLendo(true)
+          const leitura = await lerRelogio(comprimida)
+          setLendo(false)
+          if (leitura.calorias) somaCalorias += leitura.calorias
+          if (leitura.fcMedia) batimentos.push(leitura.fcMedia)
+        }
+        setEstado('parado')
+        vibrar(60)
+        setSelo(true)
+        setTimeout(() => setSelo(false), 4200)
+
+        const media = batimentos.length
+          ? Math.round(batimentos.reduce((a, b) => a + b, 0) / batimentos.length)
+          : null
+        const resultado = { calorias: somaCalorias || null, fcMedia: media }
+        setLido(resultado)
+        aoLerRelogio?.(resultado)
+      } catch (e) {
+        console.error(e)
+        setMensagem(e instanceof Error ? e.message : 'Não deu pra enviar')
+        setEstado('erro')
+      } finally {
+        setLendo(false)
+        setProgresso(null)
+      }
       return
     }
-    setMensagem(null)
+
     setProgresso({ feitas: 0, total: arquivos.length })
     try {
       for (let i = 0; i < arquivos.length; i++) {
@@ -212,9 +257,27 @@ export function CartaoFoto({
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-[15px] font-bold">{titulo}</h3>
           <p className="mt-0.5 text-xs leading-snug text-cinza">{descricao}</p>
-          {aceitaVarias && !somenteLeitura && (
+          {!somenteLeitura && (
             <p className="mt-1 text-[11px] font-semibold text-magenta-texto">
-              pode escolher várias de uma vez 💗
+              {tipo === 'relogio'
+                ? 'pode mandar mais de uma — eu somo as calorias 💗'
+                : 'pode escolher várias de uma vez 💗'}
+            </p>
+          )}
+
+          {lido && (lido.calorias || lido.fcMedia) && (
+            <p className="mt-2 rounded-2xl bg-rosa-50 p-2 text-[11px] leading-snug text-carvao/80">
+              li do relógio:{' '}
+              {lido.calorias ? <strong className="num">{lido.calorias} kcal</strong> : null}
+              {lido.calorias && lido.fcMedia ? ' · ' : ''}
+              {lido.fcMedia ? <strong className="num">{lido.fcMedia} bpm</strong> : null} — se
+              estiver errado, é só corrigir logo abaixo 💗
+            </p>
+          )}
+
+          {lido && !lido.calorias && !lido.fcMedia && (
+            <p className="mt-2 rounded-2xl bg-rosa-50 p-2 text-[11px] leading-snug text-carvao/70">
+              não consegui ler os números dessa foto 🥺 pode escrever eles aqui embaixo
             </p>
           )}
 
@@ -243,7 +306,9 @@ export function CartaoFoto({
                     className="botao-principal flex items-center gap-2 px-4 py-2.5 text-sm disabled:opacity-50"
                   >
                     <ImageUp size={16} />
-                    {progresso
+                    {lendo
+                      ? 'lendo o relógio… 🔎'
+                      : progresso
                       ? `enviando ${progresso.feitas + 1} de ${progresso.total}…`
                       : estado === 'preparando'
                         ? 'Preparando…'

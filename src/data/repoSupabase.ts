@@ -265,8 +265,8 @@ export const repoSupabase: Repo = {
       .upload(caminho, arquivo, { contentType: 'image/jpeg', upsert: false })
     if (erroUpload) throw erroUpload
 
-    // a galeria aceita quantas ela quiser; as outras duas são uma por dia
-    if (tipo === 'galeria') {
+    // só a foto do dia substitui a anterior; o resto acumula
+    if (tipo !== 'evolucao') {
       const { data: linha, error } = await supa()
         .from('fotos')
         .insert({ user_id: id, data, tipo, storage_path: caminho })

@@ -45,15 +45,15 @@ create table if not exists public.fotos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.perfis(id) on delete cascade,
   data date not null,
-  tipo text not null check (tipo in ('evolucao','relogio','galeria')),
+  tipo text not null check (tipo in ('evolucao','relogio','galeria','cafe','almoco','janta')),
   storage_path text not null,
   criado_em timestamptz default now()
 );
 
--- 'evolucao' e 'relogio' são uma por dia; 'galeria' ela manda quantas quiser
-create unique index if not exists fotos_uma_por_tipo
+-- só a foto do dia é uma por dia; no resto ela manda quantas quiser
+create unique index if not exists fotos_uma_por_dia
   on public.fotos (user_id, data, tipo)
-  where tipo in ('evolucao', 'relogio');
+  where tipo = 'evolucao';
 
 create table if not exists public.recados (
   id uuid primary key default gen_random_uuid(),

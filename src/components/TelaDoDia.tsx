@@ -292,11 +292,21 @@ export function TelaDoDia({
           <>
             <CartaoFoto
               titulo="⌚ Foto do relógio"
-              descricao="A telinha do relógio com o tempo, as calorias e os batimentos."
+              descricao="A telinha do relógio: eu leio as calorias e os batimentos dela sozinho."
               tipo="relogio"
               data={data}
               foto={fotoDe(snap, data, 'relogio')}
               somenteLeitura={somenteLeitura}
+              aoLerRelogio={({ calorias, fcMedia }) => {
+                const patch: Partial<typeof dia> = {}
+                if (calorias) patch.calorias = (dia?.calorias ?? 0) + calorias
+                if (fcMedia) {
+                  patch.fc_media = dia?.fc_media
+                    ? Math.round((dia.fc_media + fcMedia) / 2)
+                    : fcMedia
+                }
+                if (Object.keys(patch).length) void salvarDia(data, patch)
+              }}
             />
             {!somenteLeitura && (
               <div className="cartao-solido grid grid-cols-2 gap-3 p-4">
