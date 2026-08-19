@@ -30,10 +30,36 @@ async function perfilDaIsabela(): Promise<Perfil | null> {
     .from('perfis')
     .select('*')
     .eq('papel', 'isabela')
-    .order('criado_em', { ascending: true })
-    .limit(1)
+    .order('criado_em', { ascending: false })
   if (error) throw error
-  return (data?.[0] as Perfil) ?? null
+  const perfis = (data ?? []) as Perfil[]
+  // se sobrou algum perfil de teste, o que vale é o mais novo já preenchido
+  return perfis.find((p) => p.altura_cm && p.peso_inicial_kg) ?? perfis[0] ?? null
+}
+
+/**
+ * Devolve o perfil do usuário, criando a linha se ela não existir.
+ * O gatilho do banco normalmente já cria — mas se por qualquer motivo faltar,
+ * o app se conserta sozinho em vez de travar.
+ */
+async function garantirPerfil(usuario: { id: string; user_metadata?: Record<string, unknown> }) {
+  const existente = await perfilDoUsuario(usuario.id)
+  if (existente) return existente
+
+  const meta = usuario.user_metadata ?? {}
+  const registro = {
+    id: usuario.id,
+    nome: (meta.nome as string) || 'Você',
+    papel: ((meta.papel as Papel) === 'benjamin' ? 'benjamin' : 'isabela') as Papel,
+    data_nascimento: '2007-05-25',
+  }
+  const { data, error } = await supa()
+    .from('perfis')
+    .upsert(registro, { onConflict: 'id' })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Perfil
 }
 
 async function idDaIsabela(): Promise<string> {
@@ -81,7 +107,7 @@ export const repoSupabase: Repo = {
       perfilEmCache = null
       return null
     }
-    perfilEmCache = await perfilDoUsuario(data.user.id)
+    perfilEmCache = await garantirPerfil(data.user)
     return perfilEmCache
   },
 
@@ -92,7 +118,7 @@ export const repoSupabase: Repo = {
         cb(null)
         return
       }
-      perfilEmCache = await perfilDoUsuario(sessao.user.id)
+      perfilEmCache = await garantirPerfil(sessao.user)
       cb(perfilEmCache)
     })
     return () => data.subscription.unsubscribe()
@@ -110,9 +136,21 @@ export const repoSupabase: Repo = {
       options: { data: { nome, papel } },
     })
     if (error) throw new Error(traduzirErro(error.message))
-    const uid = data.user?.id
-    if (!uid) return
-    await supa().from('perfis').upsert({ id: uid, nome, papel }, { onConflict: 'id' })
+    const usuario = data.user
+    if (!usuario) throw new Error('A conta não foi criada — tenta de novo?')
+
+    // o gatilho do banco já cria o perfil; aqui garantimos nome e papel.
+    // Se falhar, o erro aparece na tela em vez de sumir sem ninguém ver.
+    const { error: erroPerfil } = await supa()
+      .from('perfis')
+      .upsert(
+        { id: usuario.id, nome, papel, data_nascimento: '2007-05-25' },
+        { onConflict: 'id' },
+      )
+    if (erroPerfil) {
+      throw new Error(`A conta foi criada, mas o perfil não: ${erroPerfil.message}`)
+    }
+    perfilEmCache = await garantirPerfil(usuario)
   },
 
   async sair() {
@@ -122,9 +160,15 @@ export const repoSupabase: Repo = {
 
   async salvarPerfil(patch) {
     const { data: sessao } = await supa().auth.getUser()
-    const id = sessao.user?.id
-    if (!id) throw new Error('Sem sessão ativa')
-    const { data, error } = await supa().from('perfis').update(patch).eq('id', id).select().single()
+    const usuario = sessao.user
+    if (!usuario) throw new Error('Sem sessão ativa — entre de novo, amor 💗')
+
+    const base = perfilEmCache ?? (await garantirPerfil(usuario))
+    const { data, error } = await supa()
+      .from('perfis')
+      .upsert({ ...base, ...patch, id: usuario.id }, { onConflict: 'id' })
+      .select()
+      .single()
     if (error) throw error
     perfilEmCache = data as Perfil
     return perfilEmCache

@@ -26,6 +26,7 @@ export function Onboarding() {
   const [altura, setAltura] = useState(perfil?.altura_cm ?? 165)
   const [peso, setPeso] = useState(perfil?.peso_inicial_kg ?? 75)
   const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
 
   const idade = idadeDaIsabela()
   const imc = calcularIMC(peso, altura)
@@ -36,6 +37,7 @@ export function Onboarding() {
 
   async function concluir() {
     setSalvando(true)
+    setErro(null)
     try {
       await salvarPerfil({
         nome: nome.trim() || 'Isabela',
@@ -45,6 +47,13 @@ export function Onboarding() {
       })
       await salvarPeso(hoje, peso)
       soltarConfete(130)
+    } catch (e) {
+      console.error('não deu pra salvar o começo', e)
+      setErro(
+        e instanceof Error
+          ? `${e.message} — toca de novo pra tentar 💗`
+          : 'não consegui salvar agora. Confere a internet e toca de novo 💗',
+      )
     } finally {
       setSalvando(false)
     }
@@ -169,6 +178,12 @@ export function Onboarding() {
               <Botao className="mt-3 w-full" onClick={concluir} desabilitado={salvando}>
                 {salvando ? 'preparando tudo…' : 'Bora começar 💗'}
               </Botao>
+
+              {erro && (
+                <p className="rounded-2xl bg-white/80 p-3 text-center text-sm font-semibold text-magenta-texto">
+                  {erro}
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

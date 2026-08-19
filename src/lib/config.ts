@@ -14,7 +14,19 @@ export const TEM_SUPABASE = Boolean(
   SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.startsWith('http'),
 )
 
-export const TEM_SERVIDOR = Boolean(API_URL && API_CHAVE && API_URL.startsWith('http'))
+/**
+ * Página em HTTPS não consegue falar com um servidor em HTTP puro — o navegador
+ * bloqueia (mixed content) e todo pedido morre calado. Nesse caso é melhor
+ * ignorar o modo servidor do que deixar o app mudo.
+ */
+const servidorAlcancavel =
+  typeof window === 'undefined' ||
+  window.location.protocol !== 'https:' ||
+  API_URL.startsWith('https://')
+
+export const TEM_SERVIDOR = Boolean(
+  API_URL && API_CHAVE && API_URL.startsWith('http') && servidorAlcancavel,
+)
 
 export type ModoDeDados = 'supabase' | 'servidor' | 'aparelho'
 
