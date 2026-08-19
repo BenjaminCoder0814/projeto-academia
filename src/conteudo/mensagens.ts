@@ -106,6 +106,24 @@ export const TIMER = {
   confirmarSaida: 'quer parar mesmo? falta pouquinho 🥺',
 }
 
+/**
+ * A festa que aparece quando ela bate a meta de água.
+ * Benjamin: essas três linhas são as que ela vê na tela cheia — troque à vontade.
+ */
+export const FESTA_DA_AGUA = {
+  titulo: 'PARABÉNS, AMOR!',
+  subtitulo: 'você bateu toda a água de hoje 💧',
+  orgulho: 'você é o meu orgulho 🥺💗',
+}
+
+/** Frases pra quando ela continua bebendo depois da meta. */
+export const AGUA_ALEM_DA_META = [
+  'e ainda continuou bebendo 🥺💗',
+  'passou da meta e não parou — orgulho demais',
+  'isso aí, amor: água nunca é demais 💧',
+  'a meta era o começo, né? 💗',
+]
+
 /** Comemorações. */
 export const COMEMORACOES = {
   diaPerfeito: 'DIA PERFEITO 💗',

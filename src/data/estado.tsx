@@ -112,13 +112,30 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
     }
   }, [repo, pronto, perfil, recarregar])
 
-  // a virada da meia-noite de Brasília troca o dia sozinha
+  /**
+   * A virada da meia-noite de Brasília troca o dia sozinha.
+   * O relógio de 30s cobre o app aberto; os eventos cobrem o caso do celular
+   * ter passado a noite dormindo — assim que ela desbloqueia, o dia já é o novo.
+   */
   useEffect(() => {
-    const t = setInterval(() => {
+    const conferir = () => {
       const agora = hojeISO()
       setHoje((antigo) => (antigo === agora ? antigo : agora))
-    }, 60_000)
-    return () => clearInterval(t)
+    }
+
+    const t = setInterval(conferir, 30_000)
+    document.addEventListener('visibilitychange', conferir)
+    window.addEventListener('focus', conferir)
+    window.addEventListener('online', conferir)
+    window.addEventListener('pageshow', conferir)
+
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', conferir)
+      window.removeEventListener('focus', conferir)
+      window.removeEventListener('online', conferir)
+      window.removeEventListener('pageshow', conferir)
+    }
   }, [])
 
   const souIsabela = perfil?.papel === 'isabela'

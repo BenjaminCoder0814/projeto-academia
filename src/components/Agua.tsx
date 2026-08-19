@@ -1,9 +1,9 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { COMEMORACOES } from '../conteudo/mensagens'
+import { AGUA_ALEM_DA_META, COMEMORACOES, FESTA_DA_AGUA, sortear } from '../conteudo/mensagens'
 import { litros } from '../lib/calculos'
-import { soltarConfete } from '../lib/confete'
+import { chuvaDeCoracoes, soltarConfete } from '../lib/confete'
 import { vibrar } from '../lib/feedback'
 import { Botao, NumeroAnimado } from './ui'
 
@@ -21,18 +21,29 @@ export function CartaoAgua({
   somenteLeitura?: boolean
 }) {
   const [historico, setHistorico] = useState<number[]>([])
+  const [festa, setFesta] = useState(false)
   const jaComemorou = useRef(aguaMl >= metaMl)
   const proporcao = metaMl > 0 ? Math.min(1, aguaMl / metaMl) : 0
   const bateu = metaMl > 0 && aguaMl >= metaMl
+  const aMais = Math.max(0, aguaMl - metaMl)
+  const elogioExtra = sortear(AGUA_ALEM_DA_META, Math.floor(aMais / 100))
 
   useEffect(() => {
     if (bateu && !jaComemorou.current) {
       jaComemorou.current = true
-      soltarConfete(90)
-      vibrar(80)
+      setFesta(true)
+      soltarConfete(140)
+      chuvaDeCoracoes(45)
+      vibrar([90, 60, 90, 60, 200])
     }
     if (!bateu) jaComemorou.current = false
   }, [bateu])
+
+  useEffect(() => {
+    if (!festa) return
+    const t = setTimeout(() => setFesta(false), 4200)
+    return () => clearTimeout(t)
+  }, [festa])
 
   function adicionar(ml: number) {
     if (!aoRegistrar) return
@@ -58,11 +69,21 @@ export function CartaoAgua({
               / {litros(metaMl)} L
             </span>
           </div>
-          <p className="mt-1 text-xs text-cinza">
-            {bateu
-              ? COMEMORACOES.aguaBatida
-              : `faltam ${litros(Math.max(0, metaMl - aguaMl))} L, amor`}
-          </p>
+          {bateu ? (
+            <p className="mt-1 text-xs font-semibold text-verde">
+              {aMais > 0 ? `meta batida + ${aMais} ml 💗` : COMEMORACOES.aguaBatida}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-cinza">
+              faltam {litros(Math.max(0, metaMl - aguaMl))} L, amor
+            </p>
+          )}
+
+          {bateu && !somenteLeitura && (
+            <p className="font-bilhete mt-1 text-lg leading-tight text-magenta-texto">
+              {aMais > 0 ? elogioExtra : 'pode continuar bebendo, viu? 💧'}
+            </p>
+          )}
 
           {!somenteLeitura && (
             <>
@@ -95,7 +116,58 @@ export function CartaoAgua({
       <p className="mt-3 rounded-2xl bg-rosa-50 p-2.5 text-center text-[11px] leading-snug text-cinza">
         conta água, chá sem açúcar e água de coco. Refri e café não valem, amor 😅
       </p>
+
+      <FestaDaAgua aberta={festa} aoFechar={() => setFesta(false)} />
     </div>
+  )
+}
+
+/** Tela cheia de parabéns quando ela fecha a água do dia. */
+function FestaDaAgua({ aberta, aoFechar }: { aberta: boolean; aoFechar: () => void }) {
+  return (
+    <AnimatePresence>
+      {aberta && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={aoFechar}
+          className="fixed inset-0 z-[90] grid place-items-center bg-rosa-500/25 px-8 backdrop-blur-[3px]"
+        >
+          <motion.div
+            initial={{ scale: 0.5, y: 30, rotate: -6 }}
+            animate={{ scale: 1, y: 0, rotate: -1.5 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 220, damping: 14 }}
+            className="w-full max-w-xs rounded-[28px] bg-white/95 p-6 text-center shadow-rosaForte"
+          >
+            <motion.p
+              animate={{ scale: [1, 1.15, 1], rotate: [0, 6, -6, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity }}
+              className="text-6xl"
+            >
+              💧
+            </motion.p>
+
+            <p className="font-manuscrita mt-2 text-3xl leading-tight text-rosa-500">
+              {FESTA_DA_AGUA.titulo}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-carvao/70">{FESTA_DA_AGUA.subtitulo}</p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="font-bilhete mt-4 text-2xl leading-snug text-magenta-texto"
+            >
+              {FESTA_DA_AGUA.orgulho}
+            </motion.p>
+
+            <p className="mt-4 text-[11px] text-cinza">toca pra fechar</p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
