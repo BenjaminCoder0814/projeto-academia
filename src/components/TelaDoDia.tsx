@@ -326,6 +326,22 @@ export function TelaDoDia({
 
         {/* peso */}
         {!somenteLeitura && <CartaoPeso data={data} aoSalvar={salvarPeso} />}
+
+        {/* fechar o dia */}
+        <FecharODia
+          perfeito={perfeito}
+          tarefas={tarefas}
+          somenteLeitura={somenteLeitura}
+          aoFechar={aoFechar}
+          aoConcluir={async () => {
+            const patch: Partial<typeof dia> = {}
+            if (tarefas.corrida.aplicavel && !tarefas.corrida.feito) patch.corrida_ok = true
+            if (tarefas.natacao.aplicavel && !tarefas.natacao.feito) patch.natacao_ok = true
+            if (!tarefas.agua.feito) patch.agua_ml = Math.max(dia?.agua_ml ?? 0, meta)
+            vibrar([60, 40, 90])
+            await salvarDia(data, patch)
+          }}
+        />
       </div>
 
       {/* dia perfeito */}
@@ -354,6 +370,101 @@ export function TelaDoDia({
           <CartinhaAberta cartinha={cartinha} aoFechar={() => setCartinhaAberta(false)} />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/**
+ * O fecho do dia: marca de uma vez o que ela já fez e diz, sem cobrar,
+ * o que ainda falta pro dia ficar perfeito.
+ */
+function FecharODia({
+  perfeito,
+  tarefas,
+  somenteLeitura,
+  aoConcluir,
+  aoFechar,
+}: {
+  perfeito: boolean
+  tarefas: ReturnType<typeof tarefasDoDia>
+  somenteLeitura?: boolean
+  aoConcluir: () => Promise<void>
+  aoFechar: () => void
+}) {
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  const faltando = [
+    tarefas.fotoEvolucao.aplicavel && !tarefas.fotoEvolucao.feito ? 'a fotinha do dia 📸' : null,
+    tarefas.fotoRelogio.aplicavel && !tarefas.fotoRelogio.feito ? 'a foto do relógio ⌚' : null,
+  ].filter(Boolean) as string[]
+
+  if (somenteLeitura) {
+    return (
+      <Botao tipo="suave" className="w-full" onClick={aoFechar}>
+        Fechar
+      </Botao>
+    )
+  }
+
+  if (perfeito) {
+    return (
+      <div
+        className="rounded-card p-5 text-center shadow-rosa"
+        style={{ background: 'linear-gradient(135deg,#FFE9B8 0%,#FFD9E8 100%)' }}
+      >
+        <p className="text-4xl">🏆</p>
+        <p className="font-manuscrita mt-1 text-2xl text-magenta-texto">dia fechado 💗</p>
+        <p className="mt-1 text-xs text-carvao/70">tudo que valia hoje está marcado</p>
+        <Botao className="mt-3 w-full" onClick={aoFechar}>
+          Voltar pro calendário
+        </Botao>
+      </div>
+    )
+  }
+
+  return (
+    <div className="cartao-solido p-4">
+      <Botao
+        className="w-full py-5 text-lg"
+        desabilitado={salvando}
+        onClick={async () => {
+          setSalvando(true)
+          setErro(null)
+          try {
+            await aoConcluir()
+          } catch (e) {
+            console.error(e)
+            setErro(
+              e instanceof Error
+                ? `${e.message} — toca de novo 💗`
+                : 'não consegui salvar agora. Confere a internet 💗',
+            )
+          } finally {
+            setSalvando(false)
+          }
+        }}
+      >
+        {salvando ? 'marcando tudo…' : 'Concluir o dia 💗'}
+      </Botao>
+
+      <p className="mt-2 text-center text-[11px] leading-snug text-cinza">
+        marca de uma vez o treino e a água do dia
+      </p>
+
+      {faltando.length > 0 && (
+        <p className="mt-2 rounded-2xl bg-rosa-50 p-3 text-center text-xs leading-snug text-carvao/70">
+          pro dia ficar perfeitinho ainda falta {faltando.join(' e ')} — sem pressa 💗
+        </p>
+      )}
+
+      {erro && (
+        <p className="mt-2 text-center text-sm font-semibold text-magenta-texto">{erro}</p>
+      )}
+
+      <Botao tipo="fantasma" className="mt-1 w-full text-sm" onClick={aoFechar}>
+        fechar sem concluir
+      </Botao>
     </div>
   )
 }

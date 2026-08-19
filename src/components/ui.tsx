@@ -1,5 +1,6 @@
-import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { useEffect, useState, type ReactNode } from 'react'
+import { AnimatePresence, animate, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { X } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { reduzirMovimento, vibrar } from '../lib/feedback'
 
 /* ------------------------------------------------------------------ */
@@ -367,14 +368,38 @@ export function Folhinha({
   aoFechar: () => void
   children: ReactNode
 }) {
+  const deslocamento = useMotionValue(0)
+  const inicioDoArrasto = useRef<number | null>(null)
+
   useEffect(() => {
     if (!aberta) return
+    deslocamento.set(0)
     const antes = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = antes
     }
-  }, [aberta])
+  }, [aberta, deslocamento])
+
+  /* O arrasto pra fechar vive SÓ na alcinha de cima. Se ele ficasse na folha
+     inteira, o Framer Motion desligaria o `touch-action` vertical e o dedo não
+     conseguiria rolar o conteúdo — foi exatamente o que aconteceu no celular. */
+  function comecarArrasto(e: React.PointerEvent) {
+    inicioDoArrasto.current = e.clientY
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function seguirArrasto(e: React.PointerEvent) {
+    if (inicioDoArrasto.current === null) return
+    deslocamento.set(Math.max(0, e.clientY - inicioDoArrasto.current))
+  }
+
+  function terminarArrasto() {
+    if (inicioDoArrasto.current === null) return
+    inicioDoArrasto.current = null
+    if (deslocamento.get() > 110) aoFechar()
+    else animate(deslocamento, 0, { type: 'spring', stiffness: 400, damping: 34 })
+  }
 
   return (
     <AnimatePresence>
@@ -391,17 +416,40 @@ export function Folhinha({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.4 }}
-            onDragEnd={(_, info) => info.offset.y > 120 && aoFechar()}
             transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-[30px] bg-rosa-50 pb-10 shadow-rosaForte"
+            className="fixed inset-x-0 bottom-0 z-50 h-[88dvh] max-w-md md:left-1/2 md:-translate-x-1/2"
           >
-            <div className="sticky top-0 z-10 rounded-t-[30px] bg-rosa-50/95 pb-1 pt-3 backdrop-blur">
-              <div className="mx-auto h-1.5 w-12 rounded-pill bg-rosa-200" />
-            </div>
-            <div className="px-5">{children}</div>
+            <motion.div
+              style={{ y: deslocamento }}
+              className="flex h-full flex-col overflow-hidden rounded-t-[30px] bg-rosa-50 shadow-rosaForte"
+            >
+              {/* alcinha: é daqui que se arrasta pra fechar */}
+              <div
+                onPointerDown={comecarArrasto}
+                onPointerMove={seguirArrasto}
+                onPointerUp={terminarArrasto}
+                onPointerCancel={terminarArrasto}
+                className="relative shrink-0 cursor-grab touch-none pb-1 pt-3 active:cursor-grabbing"
+              >
+                <div className="mx-auto h-1.5 w-12 rounded-pill bg-rosa-200" />
+                <button
+                  type="button"
+                  onClick={aoFechar}
+                  aria-label="Fechar"
+                  className="absolute right-2 top-1 grid h-11 w-11 place-items-center rounded-full text-cinza"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* conteúdo: rola normalmente, o dedo é dele */}
+              <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-10"
+                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+              >
+                {children}
+              </div>
+            </motion.div>
           </motion.div>
         </>
       )}
